@@ -43,9 +43,6 @@ module test_adder_1;
         #1 $display("%1b %2b %3b | %1b %2b", a, b, c_in, sum, c_out);
       end
     end
-
-
-        
     $finish;      
 	end
 
