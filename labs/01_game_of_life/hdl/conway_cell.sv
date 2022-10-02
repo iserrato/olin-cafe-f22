@@ -15,6 +15,8 @@ output logic exactly_two;
 
 assign state_q = state_0;
 
+state_q = state_0;
+
 input wire [7:0] neighbors;
 logic [1:0] out_0, out_1, out_2, out_3;
 logic [2:0] out_4, out_5;
