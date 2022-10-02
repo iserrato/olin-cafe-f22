@@ -17,9 +17,19 @@ assign state_q = state_0;
 
 state_q = state_0;
 
+state_q = state_0;
+
 input wire [7:0] neighbors;
-logic [1:0] out_0, out_1, out_2, out_3;
-logic [2:0] out_4, out_5;
+generate 
+    adder_n ADDER(
+      .a(a[i]),
+      .b(b[i]),
+      .c_in(carries[i]),
+      .sum(sum[i]),
+      .c_out(carries[i+1])
+    );
+endgenerate
+
 
 adder_1 ADDER0 (
   .a(neighbors[0]),
