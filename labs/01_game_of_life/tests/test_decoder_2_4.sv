@@ -1,0 +1,46 @@
+`timescale 1ns / 1ps
+`default_nettype none
+
+`define SIMULATION
+
+module test_decoders;
+  logic ena;
+  logic [1:0] in;
+  wire [3:0] out;
+
+  decoder_2_to_4 UUT(
+    // .name of module_port(name_of_local_wire_or_logic)
+    // to avoid confusion about which port is which
+    .ena(ena), 
+    .in(in), 
+    .out(out)
+    );
+
+  initial begin
+    // Collect waveforms
+    $dumpfile("decoder_2_4.fst");
+    $dumpvars(0, UUT);
+    
+    ena = 0;
+    $display("ena in[1:0] | out[3:0]");
+   for (int j = 0; j < 2; j = j + 1) begin 
+      in[1] = j[0];
+      for (int i = 0; i < 2; i = i + 1) begin
+        in[0] = i[0];
+        #1 $display("%1b %2b | %4b", ena, in, out);
+      end
+    end
+
+  ena = 1;
+   for (int j = 0; j < 2; j = j + 1) begin 
+      in[1] = j[0];
+      for (int i = 0; i < 2; i = i + 1) begin
+        in[0] = i[0];
+        #1 $display("%1b %2b | %4b", ena, in, out);
+      end
+    end
+        
+    $finish;      
+	end
+
+endmodule
