@@ -7,7 +7,7 @@ input wire rst;
 input wire ena;
 
 input wire state_0;
-output logic state_d;
+output logic state_d; // NOTE - this is only an output of the module for debugging purposes. 
 output logic state_q;
 
 state_q = state_0;
