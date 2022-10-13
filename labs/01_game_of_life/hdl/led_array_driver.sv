@@ -28,7 +28,10 @@ initial begin
   end
 end
 
-wire [N-1:0] x_decoded;
-decoder_3_to_8 COL_DECODER(ena, x, x_decoded);
+// wire [N-1:0] x_decoded;
+decoder_3_to_8 COL_DECODER(ena, x, cols);
+always_comb begin: ROW_LOGIC
+  rows
+end
 
 endmodule
