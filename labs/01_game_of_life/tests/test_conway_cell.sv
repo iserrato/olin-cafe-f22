@@ -5,14 +5,16 @@
 
 module test_conway_cell;
 
-logic clk, rst, ena, state_0;
+logic clk, rst, ena, state_0, exactly_three, exactly_two;
 logic [7:0] neighbors;
+logic [3:0] neighbor_sum;
 wire state_d, state_q;
 
 conway_cell UUT(
   .clk(clk), .rst(rst), .ena(ena),
   .neighbors(neighbors),
-  .state_0(1'b0), .state_d(state_d), .state_q(state_q)
+  .state_0(1'b0), .state_d(state_d), .state_q(state_q), 
+  .neighbor_sum(neighbor_sum), .exactly_three(exactly_three), .exactly_two(exactly_two)
 );
 
 int errors = 0;
@@ -41,18 +43,18 @@ initial begin
   repeat (2) @(posedge clk);
   rst = 0;
   
-  $display("neighbors : d : q");
+  $display("neighbors : sum : d : q");
   for (int i = 0; i < 255; i = i + 1) begin
     // Change inputs at a negative edge to avoid setup issues.
     @(negedge clk);
     neighbors = i[7:0];
     @(posedge clk);
-    $display("%b : %b: %b", neighbors, state_d, state_q);
+    $display("%b : %b : %b : %b : %b : %b", state_0, neighbors, exactly_three, exactly_two, state_d, state_q);
   end
 
   #10;
 
-  if(errors > 0) $display("FAIL: Had %d errros.", errors);
+  if(errors > 0) $display("FAIL: Had %d errors.", errors);
   else $display("Test finished successfully!");
   $finish; // End the simulation.
 end
@@ -79,8 +81,8 @@ always @(neighbors) begin
   end
 
   if(state_d !== correct_d) begin
-    $display("@%t: ERROR: living_neighbors = %d, state_d should be %b, is %b",
-      $time, living_neighbors, correct_d, state_d);
+    $display("@%t: ERROR: living_neighbors = %d, ena is %b, state_0 is %b, state_d should be %b, is %b",
+      $time, living_neighbors, ena, state_0, correct_d, state_d);
     errors = errors + 1;
   end
 end

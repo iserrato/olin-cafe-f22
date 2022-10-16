@@ -1,3 +1,5 @@
+`timescale 1ns / 1ps
+`default_nettype none
 /*
 A "physics" based model for the LED array.
 
