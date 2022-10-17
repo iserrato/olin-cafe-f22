@@ -80,7 +80,7 @@ adder_n #(.N(3)) ADDER6 (
 always_comb begin
   exactly_three = ~(neighbor_sum[0] ^ 1'b1) & ~(neighbor_sum[1] ^ 1'b1) & ~(neighbor_sum[2] ^ 1'b0) & ~(neighbor_sum[3] ^ 1'b0);
   exactly_two = ~(neighbor_sum[0] ^ 1'b0) & ~(neighbor_sum[1] ^ 1'b1) & ~(neighbor_sum[2] ^ 1'b0) & ~(neighbor_sum[3] ^ 1'b0);
-  state_d = state_0 ? (exactly_three  + exactly_two) : exactly_three;
+  state_d = state_0 ? (exactly_three  | exactly_two) : exactly_three;
 end
 
 always_ff @(posedge clk) begin
