@@ -28,14 +28,18 @@ initial begin
   end
 end
 
-// wire [N-1:0] x_decoded;
-decoder_3_to_8 COL_DECODER(ena, x, cols);
+wire [N-1:0] x_decoded;
+decoder_3_to_8 COL_DECODER(ena, x, x_decoded);
+
+assign cols = x_decoded;
+
+
 always_comb begin: ROW_LOGIC
-  rows[0] = ~(cells[0] | cells[1]| cells[2]| cells[3]| cells[4]);
-  rows[1] = ~(cells[5] | cells[6]| cells[7]| cells[8]| cells[9]);
-  rows[2] = ~(cells[10] | cells[11]| cells[12]| cells[13]| cells[14]);
-  rows[3] = ~(cells[15] | cells[16]| cells[17]| cells[18]| cells[19]);
-  rows[4] = ~(cells[20] | cells[21]| cells[22]| cells[23]| cells[24]);
+  rows[0] = ~|(x_decoded[4:0] & cells[4:0]);
+  rows[1] = ~|(x_decoded[4:0] & cells[9:5]);
+  rows[2] = ~|(x_decoded[4:0] & cells[14:10]);
+  rows[3] = ~|(x_decoded[4:0] & cells[19:15]);
+  rows[4] = ~|(x_decoded[4:0] & cells[24:20]);
 end
 
 endmodule

@@ -13,23 +13,10 @@ output logic [3:0] neighbor_sum;
 output logic exactly_three;
 output logic exactly_two;
 
-assign state_q = state_0;
-
-state_q = state_0;
-
-state_q = state_0;
-
 input wire [7:0] neighbors;
-generate 
-    adder_n ADDER(
-      .a(a[i]),
-      .b(b[i]),
-      .c_in(carries[i]),
-      .sum(sum[i]),
-      .c_out(carries[i+1])
-    );
-endgenerate
 
+logic [1:0] out_0, out_1, out_2, out_3;
+logic [2:0] out_4, out_5;
 
 adder_1 ADDER0 (
   .a(neighbors[0]),
@@ -92,11 +79,18 @@ adder_n #(.N(3)) ADDER6 (
 always_comb begin
   exactly_three = ~(neighbor_sum[0] ^ 1'b1) & ~(neighbor_sum[1] ^ 1'b1) & ~(neighbor_sum[2] ^ 1'b0) & ~(neighbor_sum[3] ^ 1'b0);
   exactly_two = ~(neighbor_sum[0] ^ 1'b0) & ~(neighbor_sum[1] ^ 1'b1) & ~(neighbor_sum[2] ^ 1'b0) & ~(neighbor_sum[3] ^ 1'b0);
-  state_d = state_0 ? (exactly_three  | exactly_two) : exactly_three;
+  state_d = state_q ? (exactly_three  | exactly_two) : exactly_three;
 end
 
 always_ff @(posedge clk) begin
-  // ?
+  if (rst) begin
+    state_q <= state_0;
+  end
+  else begin
+    if (ena) begin
+      state_q <= state_d;
+    end
+  end
 end
 
 endmodule
