@@ -1,0 +1,43 @@
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+-------------------------------------------------------------------------------------------------
+| Tool Version : Vivado v.2022.1 (lin64) Build 3526262 Mon Apr 18 15:47:01 MDT 2022
+| Date         : Tue Oct 18 21:29:17 2022
+| Host         : isabel-Latitude-5401 running 64-bit Ubuntu 22.04.1 LTS
+| Command      : report_timing -sort_by group -max_paths 100 -path_type summary -file timing.log
+| Design       : main
+| Device       : 7a35t-cpg236
+| Speed File   : -1  PRODUCTION 1.23 2018-06-13
+-------------------------------------------------------------------------------------------------
+
+Timing Report
+
+Startpoint                     Endpoint                       Slack(ns)     
+----------------------------------------------------------------------------
+display_counter_reg[12]/C      display_counter_reg[12]/D      80.616        
+display_counter_reg[12]/C      display_counter_reg[9]/D       80.660        
+display_counter_reg[12]/C      display_counter_reg[11]/D      80.681        
+x_reg[3]/C                     x_reg[0]/R                     80.714        
+x_reg[3]/C                     x_reg[1]/R                     80.714        
+x_reg[3]/C                     x_reg[2]/R                     80.714        
+x_reg[3]/C                     x_reg[3]/R                     80.714        
+display_counter_reg[12]/C      display_counter_reg[10]/D      80.755        
+display_counter_reg[12]/C      display_counter_reg[8]/D       80.771        
+display_counter_reg[12]/C      display_counter_reg[5]/D       80.772        
+display_counter_reg[12]/C      display_counter_reg[7]/D       80.793        
+display_counter_reg[12]/C      display_counter_reg[6]/D       80.867        
+display_counter_reg[12]/C      display_counter_reg[4]/D       80.883        
+display_counter_reg[12]/C      display_counter_reg[3]/D       81.035        
+display_counter_reg[12]/C      display_counter_reg[2]/D       81.095        
+display_counter_reg[12]/C      display_counter_reg[1]/D       81.448        
+display_counter_reg[12]/C      display_counter_reg[0]/D       81.665        
+x_reg[1]/C                     x_reg[1]/D                     81.871        
+x_reg[3]/C                     x_reg[3]/D                     81.922        
+x_reg[0]/C                     x_reg[2]/D                     81.979        
+x_reg[0]/C                     x_reg[0]/D                     82.046        
+display_counter_reg[12]/C      x_reg[0]/CE                    82.293        
+display_counter_reg[12]/C      x_reg[1]/CE                    82.293        
+display_counter_reg[12]/C      x_reg[2]/CE                    82.293        
+display_counter_reg[12]/C      x_reg[3]/CE                    82.293        
+
+
+
