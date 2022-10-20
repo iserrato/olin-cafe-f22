@@ -22,13 +22,13 @@ display modules, available from [adafruit](https://www.adafruit.com/product/454)
 
 */
 
-`define DISABLE_GAME // Uncomment this to degug your LED driver without the game running.
+// `define DISABLE_GAME // Uncomment this to degug your LED driver without the game running.
 
 module main(clk, buttons, leds, rgb, cols, rows);
 //Module I/O and parameters
 parameter game_divider = 23; // A clock divider parameter - 12 MHz / 2^23 is about 1 Hz (human visible speed).
 parameter display_divider = 12; // 12 to 17 are good values. Need to PWM the LEDs faster than the game clock.
-parameter N = 8; // Size of the grid. Change this to 5 if you only built a 5x5 array!
+parameter N = 5; // Size of the grid. Change this to 5 if you only built a 5x5 array!
 parameter M = N + 2; // Size of the grid, plus a border all around (makes wiring way easier).
 // Parameter checks.
 initial if (N < 3) $error("N has to be >= 3 to make for interesting patterns.");
@@ -66,6 +66,7 @@ always_comb begin : io_logic
     rgb[0] = ~( buttons[0] & ~buttons[1]);
     rgb[1] = ~(~buttons[0] &  buttons[1]);
     rgb[2] = ~( buttons[0] &  buttons[1]);
+    // rgb = 3'b010;
 end
 
 // Instantiate the LED Driver Module
@@ -92,15 +93,15 @@ always_comb begin
 `else // MANUAL_INITIAL_CONDITION
   // You will need to update the constants and size based on the size M.
   if (N == 5) begin
-    bordered_cells_0 = `INIT_5x5_PERIOD2_BLINKER;
+    bordered_cells_0 = `INIT_5x5_PERIOD2_TOAD;
   end else if (N == 8) begin
     // Last implementation is what counts.
-    // bordered_cells_0 = `INIT_8x8_GLIDER;
+    //bordered_cells_0 = `INIT_8x8_GLIDER;
     // bordered_cells_0 = `INIT_8x8_ALTERNATING;     
   end else if (N==15) begin
-    bordered_cells_0 = `INIT_13x13_PULSAR;
+    //bordered_cells_0 = `INIT_13x13_PULSAR;
   end else begin
-    bordered_cells_0 = {M*M {1'b1}};
+    //bordered_cells_0 = {M*M {1'b1}};
   end
 `endif // MANUAL_INITIAL_CONDITION
 end

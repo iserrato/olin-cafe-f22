@@ -35,11 +35,11 @@ assign cols = x_decoded;
 
 
 always_comb begin: ROW_LOGIC
-  rows[0] = ~|(x_decoded[4:0] & cells[4:0]);
-  rows[1] = ~|(x_decoded[4:0] & cells[9:5]);
+  rows[0] = ~|(x_decoded[4:0] & cells[24:20]);
+  rows[1] = ~|(x_decoded[4:0] & cells[19:15]);
   rows[2] = ~|(x_decoded[4:0] & cells[14:10]);
-  rows[3] = ~|(x_decoded[4:0] & cells[19:15]);
-  rows[4] = ~|(x_decoded[4:0] & cells[24:20]);
+  rows[3] = ~|(x_decoded[4:0] & cells[9:5]);
+  rows[4] = ~|(x_decoded[4:0] & cells[4:0]);
 end
 
 endmodule
