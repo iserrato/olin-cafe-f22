@@ -1,4 +1,5 @@
 # Conway's Game of Life
+## Isabel Serrato and Declan Ketchum
 In this lab you will implement a version of [Conway's Game of Life](https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life).
 
 Here's a ![block diagram](docs/conway-bd-1.png) of what we'll be making.
