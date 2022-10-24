@@ -8,9 +8,11 @@ int errors = 0;
 
 logic signed [N-1:0] a, b; // Adding the 'signed' keyword here makes the behavioural logic compute a signed slt.
 wire equals, less_than;
+logic first_comp;
+logic signed [N-2:0] s;
 
 comparator_eq #(.N(N)) UUT_EQ(.a(a), .b(b), .out(equals));
-comparator_lt #(.N(N)) UUT_LT(.a(a), .b(b), .out(less_than));
+comparator_lt #(.N(N)) UUT_LT(.a(a), .b(b), .out(less_than), .sum(s), .first_comp(first_comp));
 
 
 /*
@@ -38,7 +40,7 @@ end
 // You can make "tasks" in testbenches. Think of them like methods of a class, 
 // they have access to the member variables.
 task print_io;
-  $display("%8h %8h | == %b (%b) | <  %b (%b)", a, b, equals, correct_equals, less_than, correct_less_than);
+  $display("%b %b | == %b (%b) | <  %b (%b)... %8h, %b", a, b, equals, correct_equals, less_than, correct_less_than, s, first_comp);
 endtask
 
 
@@ -59,6 +61,22 @@ initial begin
 
   a = 38273;
   b = 38273;
+  #1 print_io();
+
+  a = 1000;
+  b = 38273;
+  #1 print_io();
+
+  a = 38273;
+  b = 1000;
+  #1 print_io();
+
+  a = 574982;
+  b = 6005384792;
+  #1 print_io();
+
+  a = 6005384792;
+  b = 574982;
   #1 print_io();
 
   // Add more interesting tests here!
