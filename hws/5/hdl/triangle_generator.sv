@@ -10,4 +10,5 @@ typedef enum logic {COUNTING_UP, COUNTING_DOWN} state_t;
 state_t state;
 
 
+
 endmodule

@@ -9,7 +9,7 @@ int errors = 0;
 logic signed [N-1:0] a, b; // Adding the 'signed' keyword here makes the behavioural logic compute a signed slt.
 wire equals, less_than;
 logic first_comp;
-logic signed [N-2:0] s;
+logic signed [N-1:0] s;
 
 comparator_eq #(.N(N)) UUT_EQ(.a(a), .b(b), .out(equals));
 comparator_lt #(.N(N)) UUT_LT(.a(a), .b(b), .out(less_than), .sum(s), .first_comp(first_comp));
