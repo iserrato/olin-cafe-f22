@@ -1,0 +1,27 @@
+[*]
+[*] GTKWave Analyzer v3.3.104 (w)1999-2020 BSI
+[*] Tue Oct 25 22:44:57 2022
+[*]
+[dumpfile] "/home/isabel/Documents/CompArch22/olin-cafe-f22/hws/5/triangle_generator.fst"
+[dumpfile_mtime] "Tue Oct 25 22:44:49 2022"
+[dumpfile_size] 735
+[savefile] "/home/isabel/Documents/CompArch22/olin-cafe-f22/hws/5/wave_cfgs/triangle_generator.gtkw"
+[timestart] 0
+[size] 1308 704
+[pos] 7 2136
+*-16.125622 949000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] test_triangle_generator.
+[sst_width] 233
+[signals_width] 126
+[sst_expanded] 1
+[sst_vpaned_height] 180
+@28
+test_triangle_generator.UUT.clk
+test_triangle_generator.UUT.ena
+@22
+test_triangle_generator.UUT.out[3:0]
+@28
+test_triangle_generator.UUT.rst
+test_triangle_generator.UUT.state
+[pattern_trace] 1
+[pattern_trace] 0

@@ -1,8 +1,9 @@
-module comparator_lt(a, b, out, sum, first_comp);
+module comparator_lt(a, b, out);
 parameter N = 32;
 input wire signed [N-1:0] a, b;
-output logic out, first_comp;
-output wire [N-1:0] sum;
+output logic out;
+wire [N-1:0] sum;
+logic first_comp;
 
 // Using only *structural* combinational logic, make a module that computes if a is less than b!
 // Note: this assumes that the two inputs are signed: aka should be interpreted as two's complement.

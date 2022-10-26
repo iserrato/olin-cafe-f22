@@ -23,5 +23,24 @@ logic [N-1:0] counter;
 // You can use behavioural combinational logic, but try to keep your sequential
 //   and combinational blocks as separate as possible.
 
+always_ff @(posedge clk) begin
+  if (rst) begin
+    out <= 0;
+    counter = 0;
+  end
+  if (ena) begin
+    if (step) begin
+      if (duty >= counter) begin
+        if (duty == 0) out <= 0;
+        else out <= 1;
+      end
+      else begin
+        out <= 0;
+      end
+      counter <= counter + 1;
+    end
+  end
+  else out <= 0;
+end
 
 endmodule

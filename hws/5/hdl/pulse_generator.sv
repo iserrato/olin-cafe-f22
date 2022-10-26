@@ -19,16 +19,19 @@ comparator_eq #(.N(N)) COMP(
 );
 
 always_ff @(posedge clk) begin
-  if (rst) counter <= 0;
-  else counter <= counter + 1;
-end
-
-always_ff @(posedge clk) begin
-  if (rst) begin 
+  if (rst) begin
+    counter <= 0;
     out <= 0;
   end
-  else begin
-    out <= counter_comparator;
+  else begin 
+    counter <= counter + 1;
+    if (ena) begin
+      out <= counter_comparator;
+    end
+    if (counter_comparator) begin
+      counter <= 0;
+    end
+
   end
 end
 
