@@ -29,4 +29,4 @@ clean:
 
 # Call this to generate your submission zip file.
 submission:
-	zip submission.zip Makefile hdl/*.sv tests/*  *.pdf
+	zip submission.zip Makefile *.sv *.pdf
