@@ -75,7 +75,7 @@ always_ff @(posedge clk) begin : spi_controller_fsm
     case(state)
       S_IDLE : begin
       end
-      S_TXING : begin
+      S_TXING : begin // transmitting
         sclk <= ~sclk;
         // positive edge logic
         if(~sclk) begin
