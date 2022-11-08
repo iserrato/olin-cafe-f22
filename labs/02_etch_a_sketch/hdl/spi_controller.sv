@@ -36,17 +36,17 @@ enum logic [2:0] {S_IDLE, S_TXING, S_TX_DONE, S_RXING, S_RX_DONE, S_ERROR } stat
 logic [15:0] tx_data;
 logic [23:0] rx_data;
 
-always_comb begin : csb_logic
-  case(state)
-    S_IDLE, S_ERROR : csb = 1;
-    S_TXING, S_TX_DONE, S_RXING, S_RX_DONE: csb = 0;
-    default: csb = 1;
-  endcase
-end
+// always_comb begin : csb_logic
+//   case(state)
+//     S_IDLE, S_ERROR : csb = 1;
+//     S_TXING, S_TX_DONE, S_RXING, S_RX_DONE: csb = 0;
+//     default: csb = 1;
+//   endcase
+// end
 
-always_comb begin : mosi_logic
-  mosi = tx_data[bit_counter[4:0]] & (state == S_TXING);
-end
+// always_comb begin : mosi_logic
+//   mosi = tx_data[bit_counter[4:0]] & (state == S_TXING);
+// end
 
 /*
 This is going to be one of our more complicated FSMs. 
@@ -85,7 +85,7 @@ always_ff @(posedge clk) begin : spi_controller_fsm
         // positive edge logic
         if(~sclk) begin
         end else begin // negative edge logic
-          i_ready = 0;
+          // i_ready = 0;
           mosi <= i_data[bit_counter];
           if(bit_counter != 0) begin
             bit_counter <= bit_counter - 1;
