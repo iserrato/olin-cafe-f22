@@ -74,17 +74,24 @@ always_ff @(posedge clk) begin : spi_controller_fsm
   end else begin
     case(state)
       S_IDLE : begin
+        if(i_valid) begin
+          state <= S_TXING;
+          bit_counter <= (spi_mode == WRITE_8) ? 7 : 15;
+          csb <= 0;
+        end
       end
       S_TXING : begin // transmitting
         sclk <= ~sclk;
         // positive edge logic
         if(~sclk) begin
         end else begin // negative edge logic
-          
+          i_ready = 0;
+          mosi <= i_data[bit_counter];
           if(bit_counter != 0) begin
             bit_counter <= bit_counter - 1;
           end else begin
             state <= S_TX_DONE;
+            csb <= 1;
           end
         end
       end
