@@ -1,3 +1,4 @@
+/* verilator lint_off STMTDLY */
 `timescale 1ns/1ps
 `default_nettype none
 module mux4(in0,in1,in2,in3,select,out);
@@ -19,3 +20,4 @@ always_comb mux1 = select[0] ? in3 : in2;
 always_comb out = select[1] ? mux1 : mux0;
 
 endmodule
+/* verilator lint_on STMTDLY */
