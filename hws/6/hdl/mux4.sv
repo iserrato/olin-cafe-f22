@@ -15,9 +15,11 @@ output logic [N-1:0] out;
 
 logic [N-1:0] mux0, mux1;
 // make 4:1 out of 3 2:1 muxes.
+/*verilator lint_off*/
 always_comb mux0 = select[0] ? in1 : in0;
 always_comb mux1 = select[0] ? in3 : in2;
 always_comb out = select[1] ? mux1 : mux0;
+/*verilator lint_on*/
 
 endmodule
 /* verilator lint_on STMTDLY */

@@ -38,7 +38,9 @@ mux16 #(.N(N)) MUX_1 (
 	.in12(in28), .in13(in29), .in14(in30), .in15(in31),
 	.select(select[3:0]), .out(mux1)
 );
+/*verilator lint_off*/
 always_comb out = select[4] ? mux1 : mux0;
+/*verilator lint_on*/
 
 // Here's the behavioral way of doing this:
 `ifdef BEHAVIORAL_MUX
