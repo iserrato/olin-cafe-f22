@@ -29,7 +29,11 @@ always_comb x00 = 32'd0; // ties x00 to ground.
 // Hint - use a scripting language if you get tired of copying and pasting the logic 32 times - e.g. python: print(",".join(["x%02d"%i for i in range(0,32)]))
 wire [31:0] x01,x02,x03,x04,x05,x06,x07,x08,x09,x10,x11,x12,x13,x14,x15,x16,x17,x18,x19,x20,x21,x22,x23,x24,x25,x26,x27,x28,x29,x30,x31;
 
- @(posedge clk) begin 
+mux32 #(.N(1)) RD0 (
+  
+);
+
+ always_ff @(posedge clk) begin 
   
  end
 endmodule

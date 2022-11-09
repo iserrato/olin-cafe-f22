@@ -90,7 +90,7 @@ always @(a or b or control) begin
   end
   
   if(result !== correct_result) begin
-    $display("@%t: Error: %s  : a = %h, b = %h, result = %h, should be %h", $time, alu_control_name(control), a, b, result, correct_result);
+    $display("@%t: Error: %s  : a = %b, b = %b, result = %b, should be %h", $time, alu_control_name(control), a, b, result, correct_result);
     errors = errors + 1;
     errors_by_op[control] = errors_by_op[control] + 1;
   end

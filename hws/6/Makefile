@@ -12,6 +12,9 @@ ALU_TEST_FILES:=tests/test_alu.sv tests/alu_behavioural.sv
 test_alu: ${ALU_TEST_FILES} ${ALU_SRCS} tests/alu_testcases.memh
 	${IVERILOG} ${ALU_TEST_FILES} ${ALU_SRCS} -o test_alu.bin && ${VVP} test_alu.bin ${VVP_POST}
 
+test_sll: hdl/mux*.sv hdl/shift_left_logical.sv
+	${IVERILOG} $^ -o test_sll.bin && ${VVP} test_sll.bin ${VVP_POST}
+
 waves_alu: test_alu
 		gtkwave alu.fst &
 
