@@ -72,7 +72,7 @@ MMCME2_BASE_inst (
 // Touch signals
 touch_t touch0, touch1;
 
-`define LAB_PART_1 // Uncomment once you start working on the next parts.
+//`define LAB_PART_1 // Uncomment once you start working on the next parts.
 
 /* ------------------------------------------------------------------------- */
 /* -- Part 1 - Intro to Sequential Logic on FPGAs                         -- */
@@ -114,7 +114,7 @@ pwm #(.N(PWM_WIDTH)) PWM_LED1 (
   .out(leds[1])
 );
 
-`define LAB_PART_1
+//`define LAB_PART_1
 always_comb begin: led_pwm_muxes
 `ifdef LAB_PART_1
   // For part 1, use the output of the triangle generators.
@@ -149,7 +149,7 @@ ili9341_display_controller ILI9341(
   .vram_rd_addr(vram_rd_addr),
   .vram_rd_data(vram_rd_data),
   // !!! NOTE - change enable_test_pattern to zero once you start implementing the video ram !!!
-  .enable_test_pattern(1'b1) 
+  .enable_test_pattern(1'b0) 
 );
 
 /* ------------------------------------------------------------------------- */
@@ -182,5 +182,53 @@ block_ram #(.W(VRAM_W), .L(VRAM_L)) VRAM(
   .wr_ena(vram_wr_ena), .wr_addr(vram_wr_addr), .wr_data(vram_wr_data)
 );
 // Add your vram control FSM here:
+
+
+// make an enum with states
+typedef enum logic [2:0] {
+  IDLE = 2'b0,
+  DRAWING = 2'b1,
+  CLEAR = 2'b2,
+  ERROR = 2'b3;
+} vram_fsm;
+
+vram_fsm vram_state;
+
+always_ff @(posedge clk) begin : vram_fsm
+  if(rst) begin
+    vram_state <= CLEAR;
+    vram_clear_count = 0;
+  end
+  case (vram_state) 
+    IDLE: begin
+      if (touch0.valid) begin
+        vram_state <= DRAWING;
+      end
+    end
+    DRAWING: begin
+      // store touch0.x and touch0.y?
+      vram_wr_ena = 1;
+      pos = touch0.y * DISPLAY_WIDTH + touch0.x; // gets address for pixel touched
+      vram_wr_addr = pos; // how to store the address of the pixel?
+      vram_wr_data = ORANGE; // write 8bit bright color
+      state <= IDLE;
+    end
+    CLEAR: begin
+      // use counter to clear things
+      if (vram_state == VRAM_L) begin
+        state <= IDLE;
+      end
+    end
+  endcase
+
+end
+always_ff @(posedge clk) begin : clear_counter
+  if (vram_state == CLEAR) begin
+    vram_clear_counter <= vram_clear_counter + 1;
+  end
+end
+
+
+
 
 endmodule
