@@ -39,7 +39,7 @@ always_comb alu_xor = a ^ b;
 // logic zero_msbs;
 // always_comb zero_msbs = &(b[N-1:5] ~^ 27'b0);
 
-// shift left
+// shift left - doesn't work, not sure why!
 logic [N-1:0] shift_l;
 shift_left_logical #(.N(N)) SHIFT_LEFT (
     .in(a), .shamt(b[4:0]), .out(shift_l)

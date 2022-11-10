@@ -30,7 +30,5 @@ mux8 #(.N(N)) MUX_1 (
   .in0(in08), .in1(in09), .in2(in10), .in3(in11), 
   .in4(in12), .in5(in13), .in6(in14), .in7(in15),
   .select(select[2:0]), .out(mux1));
-/*verilator lint_off*/
 always_comb out = select[3] ? mux1 : mux0;
-/*verilator lint_on*/
 endmodule

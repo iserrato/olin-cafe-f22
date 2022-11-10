@@ -9,42 +9,6 @@ input  wire [$clog2(N)-1:0] shamt; // Amount we shift by.
 output wire [N-1:0] out;  // Output.
 
 mux32 #(.N(1)) MUX_0 (
-31 31
-.in00(in[31]), .in01(1'd0), .in02(1'd0), .in03(1'd0), .in04(1'd0), .in05(1'd0), .in06(1'd0), .in07(1'd0), .in08(1'd0), .in09(1'd0), .in10(1'd0), .in11(1'd0), .in12(1'd0), .in13(1'd0), .in14(1'd0), .in15(1'd0), .in16(1'd0), .in17(1'd0), .in18(1'd0), .in19(1'd0), .in20(1'd0), .in21(1'd0), .in22(1'd0), .in23(1'd0), .in24(1'd0), .in25(1'd0), .in26(1'd0), .in27(1'd0), .in28(1'd0), .in29(1'd0), .in30(1'd0), .in31(1'd0), .select(shamt), .out(out[N-1])
-);
-mux32 #(.N(1)) MUX_1 (
-30 30
-.in00(in[30]), 31 30
-.in01(in[31]), .in02(1'd0), .in03(1'd0), .in04(1'd0), .in05(1'd0), .in06(1'd0), .in07(1'd0), .in08(1'd0), .in09(1'd0), .in10(1'd0), .in11(1'd0), .in12(1'd0), .in13(1'd0), .in14(1'd0), .in15(1'd0), .in16(1'd0), .in17(1'd0), .in18(1'd0), .in19(1'd0), .in20(1'd0), .in21(1'd0), .in22(1'd0), .in23(1'd0), .in24(1'd0), .in25(1'd0), .in26(1'd0), .in27(1'd0), .in28(1'd0), .in29(1'd0), .in30(1'd0), .in31(1'd0), .select(shamt), .out(out[N-2])
-);
-mux32 #(.N(1)) MUX_2 (
-29 29
-.in00(in[29]), 30 29
-.in01(in[30]), 31 29
-.in02(in[31]), .in03(1'd0), .in04(1'd0), .in05(1'd0), .in06(1'd0), .in07(1'd0), .in08(1'd0), .in09(1'd0), .in10(1'd0), .in11(1'd0), .in12(1'd0), .in13(1'd0), .in14(1'd0), .in15(1'd0), .in16(1'd0), .in17(1'd0), .in18(1'd0), .in19(1'd0), .in20(1'd0), .in21(1'd0), .in22(1'd0), .in23(1'd0), .in24(1'd0), .in25(1'd0), .in26(1'd0), .in27(1'd0), .in28(1'd0), .in29(1'd0), .in30(1'd0), .in31(1'd0), .select(shamt), .out(out[N-3])
-);
-mux32 #(.N(1)) MUX_3 (
-28 28
-.in00(in[28]), 29 28
-.in01(in[29]), 30 28
-.in02(in[30]), 31 28
-.in03(in[31]), .in04(1'd0), .in05(1'd0), .in06(1'd0), .in07(1'd0), .in08(1'd0), .in09(1'd0), .in10(1'd0), .in11(1'd0), .in12(1'd0), .in13(1'd0), .in14(1'd0), .in15(1'd0), .in16(1'd0), .in17(1'd0), .in18(1'd0), .in19(1'd0), .in20(1'd0), .in21(1'd0), .in22(1'd0), .in23(1'd0), .in24(1'd0), .in25(1'd0), .in26(1'd0), .in27(1'd0), .in28(1'd0), .in29(1'd0), .in30(1'd0), .in31(1'd0), .select(shamt), .out(out[N-4])
-);
-(base) isabel@isabel-Latitude-5401:~/Documents/CompArch22/olin-cafe-f22/hws/6$ python mux_gen.py
-mux32 #(.N(1)) MUX_0 (
-.in00(in[31]), .in01(1'd0), .in02(1'd0), .in03(1'd0), .in04(1'd0), .in05(1'd0), .in06(1'd0), .in07(1'd0), .in08(1'd0), .in09(1'd0), .in10(1'd0), .in11(1'd0), .in12(1'd0), .in13(1'd0), .in14(1'd0), .in15(1'd0), .in16(1'd0), .in17(1'd0), .in18(1'd0), .in19(1'd0), .in20(1'd0), .in21(1'd0), .in22(1'd0), .in23(1'd0), .in24(1'd0), .in25(1'd0), .in26(1'd0), .in27(1'd0), .in28(1'd0), .in29(1'd0), .in30(1'd0), .in31(1'd0), .select(shamt), .out(out[N-1])
-);
-mux32 #(.N(1)) MUX_1 (
-.in00(in[30]), .in01(in[31]), .in02(1'd0), .in03(1'd0), .in04(1'd0), .in05(1'd0), .in06(1'd0), .in07(1'd0), .in08(1'd0), .in09(1'd0), .in10(1'd0), .in11(1'd0), .in12(1'd0), .in13(1'd0), .in14(1'd0), .in15(1'd0), .in16(1'd0), .in17(1'd0), .in18(1'd0), .in19(1'd0), .in20(1'd0), .in21(1'd0), .in22(1'd0), .in23(1'd0), .in24(1'd0), .in25(1'd0), .in26(1'd0), .in27(1'd0), .in28(1'd0), .in29(1'd0), .in30(1'd0), .in31(1'd0), .select(shamt), .out(out[N-2])
-);
-mux32 #(.N(1)) MUX_2 (
-.in00(in[29]), .in01(in[30]), .in02(in[31]), .in03(1'd0), .in04(1'd0), .in05(1'd0), .in06(1'd0), .in07(1'd0), .in08(1'd0), .in09(1'd0), .in10(1'd0), .in11(1'd0), .in12(1'd0), .in13(1'd0), .in14(1'd0), .in15(1'd0), .in16(1'd0), .in17(1'd0), .in18(1'd0), .in19(1'd0), .in20(1'd0), .in21(1'd0), .in22(1'd0), .in23(1'd0), .in24(1'd0), .in25(1'd0), .in26(1'd0), .in27(1'd0), .in28(1'd0), .in29(1'd0), .in30(1'd0), .in31(1'd0), .select(shamt), .out(out[N-3])
-);
-mux32 #(.N(1)) MUX_3 (
-.in00(in[28]), .in01(in[29]), .in02(in[30]), .in03(in[31]), .in04(1'd0), .in05(1'd0), .in06(1'd0), .in07(1'd0), .in08(1'd0), .in09(1'd0), .in10(1'd0), .in11(1'd0), .in12(1'd0), .in13(1'd0), .in14(1'd0), .in15(1'd0), .in16(1'd0), .in17(1'd0), .in18(1'd0), .in19(1'd0), .in20(1'd0), .in21(1'd0), .in22(1'd0), .in23(1'd0), .in24(1'd0), .in25(1'd0), .in26(1'd0), .in27(1'd0), .in28(1'd0), .in29(1'd0), .in30(1'd0), .in31(1'd0), .select(shamt), .out(out[N-4])
-);
-(base) isabel@isabel-Latitude-5401:~/Documents/CompArch22/olin-cafe-f22/hws/6$ python mux_gen.py
-mux32 #(.N(1)) MUX_0 (
 .in00(in[31]), .in01(1'd0), .in02(1'd0), .in03(1'd0), .in04(1'd0), .in05(1'd0), .in06(1'd0), .in07(1'd0), .in08(1'd0), .in09(1'd0), .in10(1'd0), .in11(1'd0), .in12(1'd0), .in13(1'd0), .in14(1'd0), .in15(1'd0), .in16(1'd0), .in17(1'd0), .in18(1'd0), .in19(1'd0), .in20(1'd0), .in21(1'd0), .in22(1'd0), .in23(1'd0), .in24(1'd0), .in25(1'd0), .in26(1'd0), .in27(1'd0), .in28(1'd0), .in29(1'd0), .in30(1'd0), .in31(1'd0), .select(shamt), .out(out[N-1])
 );
 mux32 #(.N(1)) MUX_1 (
