@@ -185,42 +185,45 @@ block_ram #(.W(VRAM_W), .L(VRAM_L)) VRAM(
 
 
 // make an enum with states
-typedef enum logic [2:0] {
-  IDLE = 2'b0,
-  DRAWING = 2'b1,
-  CLEAR = 2'b2,
-  ERROR = 2'b3;
-} vram_fsm;
+enum logic [2:0] {
+  IDLE,
+  DRAWING,
+  CLEAR,
+  ERROR
+} vram_state;
 
-vram_fsm vram_state;
+// vram_fsm vram_state;
+logic [$clog2(VRAM_L)-1:0] pos;
 
-always_ff @(posedge clk) begin : vram_fsm
+always_ff @(posedge clk) begin : vram_finite_state_machine
   if(rst) begin
     vram_state <= CLEAR;
-    vram_clear_count = 0;
+    vram_clear_counter <= 0;
   end
   case (vram_state) 
     IDLE: begin
+      vram_wr_ena = 0; // put this in drawing?
       if (touch0.valid) begin
         vram_state <= DRAWING;
       end
     end
     DRAWING: begin
-      // store touch0.x and touch0.y?
       vram_wr_ena = 1;
       pos = touch0.y * DISPLAY_WIDTH + touch0.x; // gets address for pixel touched
       vram_wr_addr = pos; // how to store the address of the pixel?
       vram_wr_data = ORANGE; // write 8bit bright color
-      state <= IDLE;
+      vram_state <= IDLE;
     end
     CLEAR: begin
       // use counter to clear things
-      if (vram_state == VRAM_L) begin
-        state <= IDLE;
+      if (vram_clear_counter >= VRAM_L) begin
+        vram_state <= IDLE;
       end
+      vram_wr_ena = 1;
+      vram_wr_addr = vram_clear_counter;
+      vram_wr_data = GREEN;
     end
   endcase
-
 end
 always_ff @(posedge clk) begin : clear_counter
   if (vram_state == CLEAR) begin
