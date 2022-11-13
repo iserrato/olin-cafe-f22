@@ -6,6 +6,9 @@
 
 module ft6206_controller(clk, rst, ena, scl, sda, touch0, touch1);
 
+//validate and collect touch data from touch screen. 
+//the position of the touch data is used in main to set the color of pixels that are touched
+
 parameter CLK_HZ = 12_000_000;
 parameter CLK_PERIOD_NS = (1_000_000_000/CLK_HZ);
 parameter I2C_CLK_HZ = 100_000; // Must be <= 400kHz
@@ -43,6 +46,7 @@ i2c_controller #(.CLK_HZ(CLK_HZ), .I2C_CLK_HZ(I2C_CLK_HZ)) I2C0 (
 
 // Main fsm
 enum logic [4:0] {
+  //Define states for ft controller
   S_IDLE = 0,
   S_INIT = 1,
   S_WAIT_FOR_I2C_WR = 2,
@@ -62,7 +66,8 @@ touch_t touch0_buffer, touch1_buffer;
 logic [$clog2(N_RD_BYTES):0] bytes_counter;
 
 always_ff @(posedge clk) begin
-  if(rst) begin
+  if(rst) begin 
+    // when reset button is pressed, set state to initial and coutner & touches to 0
     state <= S_INIT;
     state_after_wait <= S_IDLE;
     bytes_counter <= 0;
@@ -72,11 +77,11 @@ always_ff @(posedge clk) begin
     touch0 <= 0;
     touch1 <= 0;
   end else begin
-    case(state)
+    case(state) //define what each state does and when states change
       S_IDLE : begin
         if(i_ready & ena)
           active_register <= TD_STATUS;
-          state <= S_GET_REG_REG;
+          state <= S_GET_REG_REG; //from idle go to S_GET_REG_REG when ready and ena are true
       end
       S_INIT : begin
         state <= S_SET_THRESHOLD_REG;
@@ -90,22 +95,23 @@ always_ff @(posedge clk) begin
         state_after_wait <= S_IDLE;
       end
       S_GET_REG_REG: begin
-        state <= S_WAIT_FOR_I2C_WR;
-        state_after_wait <= S_GET_REG_DATA;
+        state <= S_WAIT_FOR_I2C_WR; //from S_GET_REG_REG wait for i2c write message
+        state_after_wait <= S_GET_REG_DATA; //if ready, move on to get reg data
       end
       S_GET_REG_DATA: begin
         state <= S_WAIT_FOR_I2C_RD;
-        state_after_wait <= S_GET_REG_DONE;
+        state_after_wait <= S_GET_REG_DONE; // if ready and valid, move on to get reg done
       end
       S_GET_REG_DONE: begin
         if(~o_valid) begin
-          state <= S_IDLE;
+          state <= S_IDLE; //when done reenter idle state if valid
         end
         else begin
           active_register <= active_register.next;
           case(active_register)
             TD_STATUS: begin
               num_touches <= |o_data[3:2] ? 0 : o_data[1:0];
+              //Determine if touch1_buffer and/or touch0_buffer are valid by checking o_data
               if(o_data[3:0] == 4'd2) begin
                 touch0_buffer.valid <= 1;
                 touch1_buffer.valid <= 1;
@@ -135,12 +141,13 @@ always_ff @(posedge clk) begin
             end
           endcase
           if(active_register == P1_YL) // TODO(avinash) replace constant
-            state <= S_TOUCH_DONE;
+            state <= S_TOUCH_DONE; //move on to touch being completed and valid
           else
-            state <= S_GET_REG_REG;
+            state <= S_GET_REG_REG; //else retry to collect touch information 
         end
       end
       S_TOUCH_DONE: begin
+        //set touch valid and touch position data
         if(num_touches >= 2'd1) begin
           touch0.valid <= touch0_buffer.valid;
           touch0.x <= DISPLAY_WIDTH - touch0_buffer.x; // fix orientation
@@ -149,7 +156,7 @@ always_ff @(posedge clk) begin
           touch0.id <= touch0_buffer.id;
         end
         // See if you can modify the above to do multitouch!
-        state <= S_IDLE;
+        state <= S_IDLE; //then return state to idle
       end      
       S_WAIT_FOR_I2C_WR : begin
         if(i_ready) state <= state_after_wait;
