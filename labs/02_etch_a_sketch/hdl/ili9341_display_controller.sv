@@ -247,7 +247,7 @@ always_ff @(posedge clk) begin : main_fsm
               cfg_state_after_wait <= S_CFG_GET_DATA;
             end
           end
-          // if we are getting data, then we set data_commandb to 1 and the rom address
+          // if we are getting data, then we set data_commandb to 1 and the ROM address
           S_CFG_GET_DATA: begin
             data_commandb <= 1;
             rom_addr <= rom_addr + 1;
@@ -282,24 +282,31 @@ always_ff @(posedge clk) begin : main_fsm
           default: cfg_state <= S_CFG_DONE;
         endcase
       end
+      // while waiting, we set the curent state to the state after waiting once input is ready
       S_WAIT_FOR_SPI: begin
         if(i_ready) begin
           state <= state_after_wait;
         end
       end
+      // if we're in start frame, set the data command to 0 and the current state to waiting for spi. The next state will be transmitting pixel data
       S_START_FRAME: begin
         data_commandb <= 0;
         state <= S_WAIT_FOR_SPI;
         state_after_wait <= S_TX_PIXEL_DATA_START;
       end
+      // if we're transmitting data, we set the data command to 1 and the next state to increment through the pixels. The current state will be waiting for SPI
       S_TX_PIXEL_DATA_START: begin
         data_commandb <= 1;
         state_after_wait <= S_INCREMENT_PIXEL;
         state <= S_WAIT_FOR_SPI;
       end
+      // if the pixel is busy and the input is ready, we set the state to incrementing the pixel
       S_TX_PIXEL_DATA_BUSY: begin
         if(i_ready) state <= S_INCREMENT_PIXEL;
       end
+      // when incrementing the pixel, we set the state to be transmitting pixel data. If the pixel's x-position is less than the display width, 
+      // we just add one. Otherwise, we increment the row if the current row is less than the display height. Otherwise, we reset the pixel to
+      // x = y = 0, and the state to the start frame
       S_INCREMENT_PIXEL: begin
         state <= S_TX_PIXEL_DATA_START;
         if(pixel_x < (DISPLAY_WIDTH-1)) begin
@@ -314,6 +321,7 @@ always_ff @(posedge clk) begin : main_fsm
           end
         end
       end
+      // if we're not in a defined state, we set the state to the error state and the x and y pixels to -1 (invalid)
       default: begin
         state <= S_ERROR;
         pixel_y <= -1;
