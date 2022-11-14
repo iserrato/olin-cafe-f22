@@ -72,7 +72,7 @@ MMCME2_BASE_inst (
 // Touch signals
 touch_t touch0, touch1;
 
-`define LAB_PART_1 // Uncomment once you start working on the next parts.
+//`define LAB_PART_1 // Uncomment once you start working on the next parts.
 
 /* ------------------------------------------------------------------------- */
 /* -- Part 1 - Intro to Sequential Logic on FPGAs                         -- */
@@ -114,7 +114,7 @@ pwm #(.N(PWM_WIDTH)) PWM_LED1 (
   .out(leds[1])
 );
 
-`define LAB_PART_1
+//`define LAB_PART_1
 always_comb begin: led_pwm_muxes
 `ifdef LAB_PART_1
   // For part 1, use the output of the triangle generators.
@@ -149,7 +149,7 @@ ili9341_display_controller ILI9341(
   .vram_rd_addr(vram_rd_addr),
   .vram_rd_data(vram_rd_data),
   // !!! NOTE - change enable_test_pattern to zero once you start implementing the video ram !!!
-  .enable_test_pattern(1'b1) 
+  .enable_test_pattern(1'b0) 
 );
 
 /* ------------------------------------------------------------------------- */
@@ -181,6 +181,46 @@ block_ram #(.W(VRAM_W), .L(VRAM_L)) VRAM(
   .clk(clk), .rd_addr(vram_rd_addr), .rd_data(vram_rd_data),
   .wr_ena(vram_wr_ena), .wr_addr(vram_wr_addr), .wr_data(vram_wr_data)
 );
-// Add your vram control FSM here:
+
+enum logic [2:0] {
+  IDLE,
+  DRAWING,
+  CLEAR,
+  ERROR
+} vram_state;
+
+logic [$clog2(VRAM_L)-1:0] pos;
+
+always_ff @(posedge clk) begin : vram_f
+  if(rst) begin
+    vram_state = CLEAR;
+    vram_clear_counter = 0;
+  end
+  case (vram_state) 
+    IDLE: begin
+      vram_wr_ena = 0;
+      if (touch0.valid) begin
+        vram_state = DRAWING;
+      end
+    end
+    DRAWING: begin
+      vram_wr_ena = 1;
+      pos = touch0.y * DISPLAY_WIDTH + touch0.x; // gets address for pixel touched
+      vram_wr_addr = pos; // store address for pixel
+      vram_wr_data = ORANGE; // write 8bit bright color
+      vram_state = IDLE;
+    end
+    CLEAR: begin
+      if (vram_clear_counter == VRAM_L) begin
+        vram_state = IDLE;
+      end
+      vram_wr_ena = 1;
+      vram_wr_addr = vram_clear_counter;
+      vram_wr_data = NAVY; // background color
+      vram_clear_counter = vram_clear_counter + 1;
+
+    end
+  endcase
+end
 
 endmodule
