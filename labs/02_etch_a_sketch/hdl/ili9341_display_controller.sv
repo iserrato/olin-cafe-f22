@@ -110,7 +110,9 @@ ILI9341_register_t current_command;
 */
 
 always_comb case(state)
-  S_START_FRAME, S_TX_PIXEL_DATA_START : i_valid = 1;
+  S_START_FRAME, S_TX_PIXEL_DATA_START : i_valid = 1; // if we are in the start frame or are transmitting, set the input to valid
+  // if we're in the initial state, we check the configuration state. If we are meant to send a command or data, we set input to valid. Otherwise,
+  // i_valid is left at 0
   S_INIT : begin
     case(cfg_state)
       S_CFG_SEND_CMD, S_CFG_SEND_DATA: i_valid = 1;
@@ -120,27 +122,36 @@ always_comb case(state)
   default: i_valid = 0;
 endcase
   
+// if we are in the start frame, we set the command to write ram. Otherwise, we set the command to do nothing
 always_comb case (state) 
   S_START_FRAME : current_command = RAMWR;
   default : current_command = NOP;
 endcase
 
+// if we are in the inital state, we set the input data to 8 bits of 0 and then the data found in ROM
+// if we are in the start frame, we set the input data to 8 bits of 0 and then the current command.
+// otherwise, we set the input data to the read data from VRAM or the pixel_color, 
+// depending if the vram rd data is valid or not
 always_comb case(state)
   S_INIT: i_data = {8'd0, rom_data};
   S_START_FRAME: i_data = {8'd0, current_command};
   default: i_data = vram_rd_data_valid ? vram_rd_data : pixel_color;
 endcase
 
+// if we are in the initial or the start frame, we set spi_mode to write 8. otherwise, write 16
 always_comb case (state)
   S_INIT, S_START_FRAME: spi_mode = WRITE_8;
   default : spi_mode = WRITE_16;
 endcase
 
+// synchronises the height and vram by going high when the row is done being written to 
+// (hsync) or the screen is done being written to (vsync)
 always_comb begin
   hsync = pixel_x == (DISPLAY_WIDTH-1);
   vsync = hsync & (pixel_y == (DISPLAY_HEIGHT-1));
 end
 
+// defines the test pattern for the display, is used in main.sv
 logic vram_rd_data_valid;
 always_comb begin  : display_color_logic
   if(enable_test_pattern) begin
@@ -179,6 +190,7 @@ logic [$clog2(CFG_CMD_DELAY):0] cfg_delay_counter;
 logic [7:0] cfg_bytes_remaining;
 
 always_ff @(posedge clk) begin : main_fsm
+// reset module
   if(rst) begin
     state <= S_INIT;
     cfg_state <= S_CFG_GET_DATA_SIZE;
@@ -190,34 +202,42 @@ always_ff @(posedge clk) begin : main_fsm
     rom_addr <= 0;
     data_commandb <= 1;
   end
-  else if(ena) begin
+  else if(ena) begin // must be enabled to work
     case (state)
       S_INIT: begin
         case (cfg_state)
-          S_CFG_GET_DATA_SIZE : begin
+          S_CFG_GET_DATA_SIZE : begin // we first have to get the data size
             cfg_state_after_wait <= S_CFG_GET_CMD;
             cfg_state <= S_CFG_MEM_WAIT;
             rom_addr <= rom_addr + 1;
             case(rom_data) 
-              8'hFF: begin
+            // if ROM Data is all high, then there are no more bytes remaining and we set the delay counter 
+            // to the current delay
+              8'hFF: begin 
                 cfg_bytes_remaining <= 0;
                 cfg_delay_counter <= CFG_CMD_DELAY;
               end
+              // if the ROM data is all low, then we set the bytes to al zero and the counter to zero, 
+              // then we set the counter to zero and the state to done
               8'h00: begin
                 cfg_bytes_remaining <= 0;
                 cfg_delay_counter <= 0;
                 cfg_state <= S_CFG_DONE;
               end
+              // otherwise, the bytes remaining becomes the ROM data and the delay counter is set to 0
               default: begin
                 cfg_bytes_remaining <= rom_data;
                 cfg_delay_counter <= 0;
               end
             endcase
           end
+          // if we're in get command, then we set the next state to send command and the current state to wait for memory
           S_CFG_GET_CMD: begin
             cfg_state_after_wait <= S_CFG_SEND_CMD;
             cfg_state <= S_CFG_MEM_WAIT;
           end
+          // if we're in send command, the command becomes 0. If there is no ROM data, we are done. Otherwise, we set the
+          // state to wait for spi, and the next state to getting data
           S_CFG_SEND_CMD : begin
             data_commandb <= 0;
             if(rom_data == 0) begin
@@ -227,6 +247,7 @@ always_ff @(posedge clk) begin : main_fsm
               cfg_state_after_wait <= S_CFG_GET_DATA;
             end
           end
+          // if we are getting data, then we set data_commandb to 1 and the rom address
           S_CFG_GET_DATA: begin
             data_commandb <= 1;
             rom_addr <= rom_addr + 1;

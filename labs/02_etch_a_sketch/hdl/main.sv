@@ -181,7 +181,6 @@ block_ram #(.W(VRAM_W), .L(VRAM_L)) VRAM(
   .clk(clk), .rd_addr(vram_rd_addr), .rd_data(vram_rd_data),
   .wr_ena(vram_wr_ena), .wr_addr(vram_wr_addr), .wr_data(vram_wr_data)
 );
-// Add your vram control FSM here:
 
 enum logic [2:0] {
   IDLE,
@@ -199,7 +198,7 @@ always_ff @(posedge clk) begin : vram_f
   end
   case (vram_state) 
     IDLE: begin
-      vram_wr_ena = 0; // put this in drawing?
+      vram_wr_ena = 0;
       if (touch0.valid) begin
         vram_state = DRAWING;
       end
