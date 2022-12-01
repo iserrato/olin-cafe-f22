@@ -20,47 +20,77 @@ output logic [31:0] mem_addr, mem_wr_data;
 input   wire [31:0] mem_rd_data;
 output logic mem_wr_ena;
 
+// Control Unit
+logic IRWrite;
+logic [31:0] Instr;
+logic AdrSrc;
+logic [1:0] ALUSrcA;
+logic [1:0] ALUSrcB;
+logic [31:0] ALUOut;
+
 // Program Counter
 output wire [31:0] PC;
 wire [31:0] PC_old;
-logic PC_ena;
+logic PCWrite;
 logic [31:0] PC_next; 
 
 // Program Counter Registers
 register #(.N(32), .RESET(PC_START_ADDRESS)) PC_REGISTER (
-  .clk(clk), .rst(rst), .ena(PC_ena), .d(PC_next), .q(PC)
+  .clk(clk), .rst(rst), .ena(PCWrite), .d(PC_next), .q(PC)
 );
 register #(.N(32)) PC_OLD_REGISTER(
-  .clk(clk), .rst(rst), .ena(PC_ena), .d(PC), .q(PC_old)
+  .clk(clk), .rst(rst), .ena(IRWrite), .d(PC), .q(PC_old)
+);
+// Instruction Register
+register #(.N(32)) INSTR_REGISTER(
+  .clk(clk), .rst(rst), .ena(IRWrite), .d(mem_rd_data), .q(Instr)
+);
+// Register Register
+register #(.N(32)) REG_REGISTER(
+  .clk(clk), .rst(rst), .ena(1'b1), .d(A), .q(mem_wr_data)
+);
+// ALU Out Register
+register #(.N(32)) ALU_REGISTER(
+  .clk(clk), .rst(rst), .ena(1'b1), .d(alu_result), .q(ALUOut)
 );
 
 // Select memory address based on address select siganl
-enum logic {MEM_SRC_PC, MEM_SRC_RESULT} mem_src; // mem_src = AdrSrc in book
+enum logic {MEM_SRC_PC, MEM_SRC_RESULT} AdrSrc;
 always_comb begin : memory_read_address_mux
-  case(mem_src)
-    MEM_SRC_RESULT : mem_rd_addr = alu_result;
-    MEM_SRC_PC : mem_rd_addr = PC;
-    default: mem_rd_addr = 0;
+  case(AdrSrc)
+    MEM_SRC_PC : mem_addr = PC;
+    MEM_SRC_RESULT : mem_addr = alu_result;
+    default: mem_addr = 0;
   endcase
 end
 
-enum logic {MEM_SRC_PC, MEM_SRC_OLD_PC, REG_DATA_1} alu_src_a; // alu_src_a = ALUSrcA in book
-always_comb begin : src_a_select
-  case(alu_src_a)
-    MEM_SRC_PC : src_a = PC;
-    MEM_SRC_PC_OLD : src_a = PC_old;
-    REG_DATA_1: src_a = reg_data1;
-    default: src_a = 0;
+enum logic {MEM_SRC_PC, MEM_SRC_OLD_PC, REG_DATA_1} ALUSrcA;
+always_comb begin : ALUSrcA
+  case(ALUSrcA)
+    MEM_SRC_PC : SrcA = PC;
+    MEM_SRC_PC_OLD : SrcA = PC_old;
+    REG_DATA_1: SrcA = reg_data1;
+    default: SrcA = 0;
   endcase
 end
 
-enum logic {RD2, IMM_EXT, CONST_FOUR} alu_src_b; // alu_src_b = ALUSrcB in book
-always_comb begin : src_a_select
-  case(alu_src_b)
-    MEM_SRC_PC : src_b = RD2;
-    MEM_SRC_PC_OLD : src_b = IMM_EXT;
-    REG_DATA_1: src_b = CONST_4;
-    default: src_b = 0;
+enum logic {RD2, IMM_EXT, CONST_FOUR} ALUSrcB;
+always_comb begin : ALUSrcB
+  case(ALUSrcB)
+    MEM_SRC_PC : SrcB = mem_wr_data;
+    MEM_SRC_PC_OLD : SrcB = IMM_EXT;
+    REG_DATA_1: SrcB = CONST_4;
+    default: SrcB = 0;
+  endcase
+end
+
+enum logic {src_ALUOut = 2'b00, src_Data = 2'b01, src_ALUResult = 2'b10} Result_enum;
+always_comb begin : Result_mux
+  case(Result_enum)
+    src_ALUOut : RESULT = ALUOut;
+    src_Data : RESULT = DATA_XXX;
+    src_ALUResult: RESULT = alu_result;
+    default: SrcB = 0;
   endcase
 end
 
@@ -71,26 +101,26 @@ enum logic {} imm_ext;
 
 
 // Register file
-logic reg_write;
+logic RegWrite;
 logic [4:0] rd, rs1, rs2;
-logic [31:0] rfile_wr_data;
-wire [31:0] reg_data1, reg_data2;
+logic [31:0] RESULT;
+wire [31:0] RD1, RD2;
 register_file REGISTER_FILE(
   .clk(clk), 
-  .wr_ena(reg_write), .wr_addr(rd), .wr_data(rfile_wr_data),
+  .wr_ena(RegWrite), .wr_addr(rd), .wr_data(RESULT),
   .rd_addr0(rs1), .rd_addr1(rs2),
-  .rd_data0(reg_data1), .rd_data1(reg_data2)
+  .rd_data0(RD1), .rd_data1(RD2)
 );
 
 // ALU and related control signals
 // Feel free to replace with your ALU from the homework.
-logic [31:0] src_a, src_b;
-alu_control_t alu_control;
+logic [31:0] SrcA, SrcB;
+alu_control_t ALUControl;
 wire [31:0] alu_result;
 wire overflow, zero, equal;
 alu_behavioural ALU (
-  .a(src_a), .b(src_b), .result(alu_result),
-  .control(alu_control),
+  .a(SrcA), .b(SrcB), .result(alu_result),
+  .control(ALUControl),
   .overflow(overflow), .zero(zero), .equal(equal)
 );
 
@@ -124,12 +154,10 @@ always_ff @(posedge clk) begin : rv32i
   if (ena) begin
     case(rv32_state)
     FETCH : begin
-      PC_ena = 1;
-      src_a = MEM_SRC_PC;
-      src_b = WRITE_DATA;
+      PCWrite = 1;
+      SrcA = MEM_SRC_PC;
+      SrcB = WriteData;
       AluOp = 
-
-      mem_addr = PC;
     end
     DECODE : begin
       end
