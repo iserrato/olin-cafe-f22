@@ -27,6 +27,8 @@ logic AdrSrc;
 logic [1:0] ALUSrcA;
 logic [1:0] ALUSrcB;
 logic [31:0] ALUOut;
+logic [31:0] A;
+logic [31:0] Data;
 
 // Program Counter
 output wire [31:0] PC;
@@ -47,11 +49,22 @@ register #(.N(32)) INSTR_REGISTER(
 );
 // Register Register
 register #(.N(32)) REG_REGISTER(
-  .clk(clk), .rst(rst), .ena(1'b1), .d(A), .q(mem_wr_data)
+  .clk(clk), .rst(rst), .ena(1'b1), .d(RD1), .q(A)
 );
+
+// Register Register 1
+register #(.N(32)) REG_REGISTER_1(
+  .clk(clk), .rst(rst), .ena(1'b1), .d(RD2), .q(mem_wr_data)
+);
+
 // ALU Out Register
 register #(.N(32)) ALU_REGISTER(
   .clk(clk), .rst(rst), .ena(1'b1), .d(alu_result), .q(ALUOut)
+);
+
+// Read Data Register
+register #(.N(32)) RD_DATA_REGISTER(
+  .clk(clk), .rst(rst), .ena(1'b1), .d(mem_rd_data), .q(Data)
 );
 
 // Select memory address based on address select siganl
@@ -64,31 +77,31 @@ always_comb begin : memory_read_address_mux
   endcase
 end
 
-enum logic {MEM_SRC_PC, MEM_SRC_OLD_PC, REG_DATA_1} ALUSrcA;
-always_comb begin : ALUSrcA
+enum logic {MEM_SRC_PC_2, MEM_SRC_OLD_PC, REG_DATA_1} ALUSrcA;
+always_comb begin : ALUSrcA_mux
   case(ALUSrcA)
-    MEM_SRC_PC : SrcA = PC;
+    MEM_SRC_PC_2 : SrcA = PC;
     MEM_SRC_PC_OLD : SrcA = PC_old;
-    REG_DATA_1: SrcA = reg_data1;
+    REG_DATA_1: SrcA = A;
     default: SrcA = 0;
   endcase
 end
 
-enum logic {RD2, IMM_EXT, CONST_FOUR} ALUSrcB;
-always_comb begin : ALUSrcB
+enum logic {Src_RD2, Src_IMM_EXT, Src_CONST_FOUR} ALUSrcB;
+always_comb begin : ALUSrcB_mux
   case(ALUSrcB)
-    MEM_SRC_PC : SrcB = mem_wr_data;
-    MEM_SRC_PC_OLD : SrcB = IMM_EXT;
-    REG_DATA_1: SrcB = CONST_4;
+    Src_RD2 : SrcB = mem_wr_data;
+    Src_IMM_EXT : SrcB = IMM_EXT;
+    Src_CONST_FOUR: SrcB = 4;
     default: SrcB = 0;
   endcase
 end
 
-enum logic {src_ALUOut = 2'b00, src_Data = 2'b01, src_ALUResult = 2'b10} Result_enum;
+enum logic {src_ALUOut = 2'b00, src_Data = 2'b01, src_ALUResult = 2'b10} ResultSrc;
 always_comb begin : Result_mux
-  case(Result_enum)
+  case(ResultSrc)
     src_ALUOut : RESULT = ALUOut;
-    src_Data : RESULT = DATA_XXX;
+    src_Data : RESULT = Data;
     src_ALUResult: RESULT = alu_result;
     default: SrcB = 0;
   endcase
@@ -96,6 +109,7 @@ end
 
 // make enum for imm_ext, extend sign depending on the size. 5{0}
 enum logic {} imm_ext;
+
 
 // find op codes, find func3 and func7 for instruction and sign extension
 
@@ -145,6 +159,11 @@ enum logic [3:0] {
   ERROR = 1111 
 } rv32_state;
 
+//decode variables
+logic [6:0] op;
+logic [2:0] func3; 
+logic [6:0] func7;
+
 always_ff @(posedge clk) begin : rv32i
   if (rst) begin
     mem_wr_ena = 0;
@@ -154,14 +173,42 @@ always_ff @(posedge clk) begin : rv32i
   if (ena) begin
     case(rv32_state)
     FETCH : begin
-      PCWrite = 1;
-      SrcA = MEM_SRC_PC;
-      SrcB = WriteData;
-      AluOp = 
+      PCWrite = 1; //?? should this be seperated/branching 
+      // SrcA = MEM_SRC_PC;
+      // SrcB = WriteData;
+      // AluOp = 
+      AdrSrc = 0;
+      IRWrite = 1;
+      mem_wr_ena = 0;
+      RegWrite = 0; 
+      ALUSrcA = 2'b00;
+      ALUSrcB = 2'b10;
+      ALUControl = ALU_AND;
+      ResultSrc = 2'b10;
     end
     DECODE : begin
+      PCWrite = 0;
+      mem_wr_ena = 0;
+      IRWrite = 0;
+      RegWrite = 0;
+      ImmSrc = 2'b00; // TODO: define ImmSrc
+
+      op = Instr[6:0]
+      rs1 = Instr[19:15]
+      rs1 = Instr[24:20]
+      rd = Instr[11:7]
+      func3 = Instr[14:12]
+      func7 = Instr[31:25]
       end
     MEM_ADDR : begin
+      PCWrite = 0;
+      mem_wr_ena = 0;
+      IRWrite = 0;
+      RegWrite = 0;
+      ImmSrc = 2'b00; 
+      ALUSrcA = 2'b10;
+      ALUSrcB = 2'b01;
+      ALUControl = ALU_AND;
       end
     EXECUTE_R : begin
       end
@@ -176,12 +223,27 @@ always_ff @(posedge clk) begin : rv32i
     ALU_WRITEBACK : begin
       end
     MEM_READ : begin
+      ResultSrc = 2'b00; 
+      PCWrite = 1'b0;
+      AdrSrc = 1'b1;
+      mem_wr_ena = 1'b0;
+      IRWrite = 1'b0;
+      RegWrite = 1'b0;
+      ImmSrc = 2'b00; 
+      ResultSrc = 2'b00;
       end
     MEM_WRITE : begin
       end
     JUMP_WRITEBACK : begin
       end
     MEM_WRITEBACK : begin
+      PCWrite = 0;
+      mem_wr_ena = 0;
+      IRWrite = 0;
+      RegWrite = 1;
+      ImmSrc = 2'b00; 
+      ResultSrc = 2'b01;
+      
       end
     ERROR : begin
       end
