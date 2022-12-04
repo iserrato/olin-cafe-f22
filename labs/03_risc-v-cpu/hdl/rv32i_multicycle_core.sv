@@ -164,6 +164,9 @@ logic [6:0] op;
 logic [2:0] func3; 
 logic [6:0] func7;
 
+op_type_t op_codes;
+funct3_ritype_t rtype_funct3;
+
 always_ff @(posedge clk) begin : rv32i
   if (rst) begin
     mem_wr_ena = 0;
@@ -192,13 +195,69 @@ always_ff @(posedge clk) begin : rv32i
       IRWrite = 0;
       RegWrite = 0;
       ImmSrc = 2'b00; // TODO: define ImmSrc
+      
+      
+      op = Instr[6:0];
+      case(op)
+        // OP_LTYPE; begin 
 
-      op = Instr[6:0]
-      rs1 = Instr[19:15]
-      rs1 = Instr[24:20]
-      rd = Instr[11:7]
-      func3 = Instr[14:12]
-      func7 = Instr[31:25]
+        //   end
+        OP_ITYPE; begin 
+          imm = Instr[31:20];
+          rs1 = Instr[19:15];
+          funct3 = Instr[14:12];
+          rd = Instr[11:7];
+          end
+        // OP_AUIPC; begin 
+
+        //   end
+        OP_STYPE; begin 
+          imm[11:5] = Instr[31:25]; //define imm TODO
+          rs1 = Instr[19:15];
+          rs2 = Instr[24:20];
+          funct3 = Instr[14:12];
+          imm[4:0] = Instr[11:7];
+          end
+        OP_RTYPE; begin 
+          funct7 = Instr[31:25]; 
+          rs1 = Instr[19:15];
+          rs2 = Instr[24:20];
+          funct3 = Instr[14:12];
+          rd = Instr[11:7];
+          end
+        OP_LUI  ; begin 
+          end
+        OP_BTYPE; begin 
+          imm[12] = Instr[31];
+          imm[10:5] = Instr[30:25];
+          rs1 = Instr[19:15];
+          rs2 = Instr[24:20];
+          funct3 = Instr[14:12];
+          imm[4:1] = Instr[11:8];
+          imm[11] = Instr[7];
+          end
+        OP_JALR ; begin //TODO: finish this!
+          end
+        OP_JAL  ; begin 
+          imm[20] = Instr[31];
+          imm[10:1] = Instr[30:21];
+          imm[] = Instr[31];
+          rs1 = Instr[19:15];
+          rs2 = Instr[24:20];
+          funct3 = Instr[14:12];
+          imm[4:1] = Instr[11:8];
+          imm[11] = Instr[7];
+          end      
+      endcase
+      case(op_codes)
+        OP_LTYPE: rv32_state = MEM_ADDR;
+        OP_STYPE: rv32_state = MEM_ADDR;
+        OP_RTYPE: rv32_state = EXECUTE_R;
+        OP_ITYPE: rv32_state = EXECUTE_I;
+        OP_JAL: rv32_state = JAL;
+        OP_BTYPE: rv32_state = BRANCH;
+        default: rv32_state = FETCH;
+      endcase
       end
     MEM_ADDR : begin
       PCWrite = 0;
@@ -209,9 +268,46 @@ always_ff @(posedge clk) begin : rv32i
       ALUSrcA = 2'b10;
       ALUSrcB = 2'b01;
       ALUControl = ALU_AND;
+      case(op_codes)
+        OP_LTYPE: rv32_state = MEM_READ;
+        OP_STYPE: rv32_state = MEM_WRITE;
+        default: rv32_state = FETCH;
+      endcase
       end
     EXECUTE_R : begin
+      ALUSrcA = 2'b10; 
+      ALUSrcB = 2'b00;
+      AluOp = 2'b10;
+      PCWrite = 0;
+      mem_wr_ena = 0;
+      IRWrite = 0;
+      RegWrite = 0;
+      ALUControl = ; //TODO: it varies based on func 7???
+      rv32_state = ALU_WRITEBACK;
+      case (rtype_funct3)
+        FUNCT3_ADD: begin 
+          case(funct7)
+            7'b0000000: ALUControl = ALU_ADD;
+            default: ALUControl = ALU_SUB;
+          endcase
+        end
+        FUNCT3_SLL: ALUControl = ALU_SLL;
+        FUNCT3_SLT: ALUControl = ALU_SLT;
+        FUNCT3_SLTU: ALUControl = ALU_SLTU;
+        FUNCT3_XOR: ALUControl = ALU_XOR;
+        FUNCT3_SHIFT_RIGHT: begin 
+          case(funct7)
+            7'b0000000: ALUControl = ALU_SRL; // Needs a funct7 bit to determine!;
+            7'b0100000: ALUControl = ALU_SRA; // Needs a funct7 bit to determine!;
+            default: ALUControl = ALU_SUB;
+          endcase
+        end
+        FUNCT3_OR: ALUControl = ALU_OR;
+        FUNCT3_AND: ALUControl = ALU_AND;
+        default: ALUControl = 
+      endcase
       end
+
     EXECUTE_I : begin
       end
     JAL : begin
@@ -221,6 +317,12 @@ always_ff @(posedge clk) begin : rv32i
     BRANCH : begin
       end
     ALU_WRITEBACK : begin
+      PCWrite = 0;
+      mem_wr_ena = 0;
+      IRWrite = 0;
+      RegWrite = 1;
+      ResultSrc = 2'b00;
+      rv32_state = FETCH;
       end
     MEM_READ : begin
       ResultSrc = 2'b00; 
