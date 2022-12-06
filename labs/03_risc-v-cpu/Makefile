@@ -25,8 +25,8 @@ test_register_file: tests/test_register_file.sv ${RFILE_SRCS}
 test_rv32i_itypes: tests/test_rv32i_system.sv asm/itypes.memh ${RV32I_SRCS}
 	${IVERILOG} -DINITIAL_INST_MEM=\"asm/itypes.memh\" tests/test_rv32i_system.sv ${RV32I_SRCS} -s test_rv32i_system -o test_rv32i_system.bin && ${VVP} test_rv32i_system.bin ${VVP_POST}
 
-test_rv32i_ri_types: tests/test_rv32i_system.sv asm/ritypes.memh ${RV32I_SRCS}
-	${IVERILOG} -DINITIAL_INST_MEM=\"asm/ritypes.memh\" tests/test_rv32i_system.sv ${RV32I_SRCS} -s test_rv32i_system -o test_rv32i_system.bin && ${VVP} test_rv32i_system.bin ${VVP_POST}
+test_rv32i_ri_types: tests/test_rv32i_system.sv asm/irtypes.memh ${RV32I_SRCS}
+	${IVERILOG} -DINITIAL_INST_MEM=\"asm/irtypes.memh\" tests/test_rv32i_system.sv ${RV32I_SRCS} -s test_rv32i_system -o test_rv32i_system.bin && ${VVP} test_rv32i_system.bin ${VVP_POST}
 
 test_rv32i_ls_types: tests/test_rv32i_system.sv asm/lstypes.memh ${RV32I_SRCS}
 	${IVERILOG} -DINITIAL_INST_MEM=\"asm/lstypes.memh\" tests/test_rv32i_system.sv ${RV32I_SRCS} -s test_rv32i_system -o test_rv32i_system.bin && ${VVP} test_rv32i_system.bin ${VVP_POST}

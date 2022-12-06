@@ -23,9 +23,6 @@ output logic mem_wr_ena;
 // Control Unit
 logic IRWrite;
 logic [31:0] Instr;
-logic AdrSrc;
-logic [1:0] ALUSrcA;
-logic [1:0] ALUSrcB;
 logic [31:0] ALUOut;
 logic [31:0] A;
 logic [31:0] Data;
@@ -150,9 +147,9 @@ enum logic [3:0] {
   MEM_WRITE = 1010,
   JUMP_WRITEBACK = 1011,
   MEM_WRITEBACK = 1100,
-  ERROR = 1101,
-  ERROR = 1110,
-  ERROR = 1111 
+  ERROR1 = 1101,
+  ERROR2 = 1110,
+  ERROR3 = 1111 
 } rv32_state;
 
 //decode variables
@@ -197,7 +194,7 @@ always_ff @(posedge clk) begin : rv32i
         // OP_LTYPE; begin 
 
         //   end
-        OP_ITYPE; begin 
+        OP_ITYPE: begin 
           imm[11:0] = Instr[31:20];
           rs1 = Instr[19:15];
           funct3 = Instr[14:12];
@@ -206,23 +203,23 @@ always_ff @(posedge clk) begin : rv32i
         // OP_AUIPC; begin 
 
         //   end
-        OP_STYPE; begin 
+        OP_STYPE: begin 
           imm[11:5] = Instr[31:25]; //define imm TODO
           rs1 = Instr[19:15];
           rs2 = Instr[24:20];
           funct3 = Instr[14:12];
           imm[4:0] = Instr[11:7];
           end
-        OP_RTYPE; begin 
+        OP_RTYPE: begin 
           funct7 = Instr[31:25]; 
           rs1 = Instr[19:15];
           rs2 = Instr[24:20];
           funct3 = Instr[14:12];
           rd = Instr[11:7];
           end
-        OP_LUI  ; begin 
+        OP_LUI  : begin 
           end
-        OP_BTYPE; begin 
+        OP_BTYPE: begin 
           imm[12] = Instr[31];
           imm[10:5] = Instr[30:25];
           rs1 = Instr[19:15];
@@ -231,14 +228,14 @@ always_ff @(posedge clk) begin : rv32i
           imm[4:1] = Instr[11:8];
           imm[11] = Instr[7];
           end
-        OP_JALR ; begin //TODO: finish this!
+        OP_JALR : begin //TODO: finish this!
           imm[20] = Instr[31];
           imm[10:1] = Instr[30:21];
           imm[21] = Instr[20];
           imm[19:12] = Instr[19:12];
           rd = Instr[11:7];
           end
-        OP_JAL  ; begin 
+        OP_JAL  : begin 
           imm[20] = Instr[31];
           imm[10:1] = Instr[30:21];
           imm[21] = Instr[20];
