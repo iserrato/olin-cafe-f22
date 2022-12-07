@@ -88,7 +88,7 @@ enum logic [1:0] {Src_RD2 = 2'b00, Src_IMM_EXT = 2'b01, Src_CONST_FOUR = 2'b10} 
 always_comb begin : ALUSrcB_mux
   case(ALUSrcB)
     Src_RD2 : SrcB = mem_wr_data;
-    Src_IMM_EXT : SrcB = IMM_EXT;
+    Src_IMM_EXT : SrcB = imm;
     Src_CONST_FOUR: SrcB = 4;
     default: SrcB = 0;
   endcase
@@ -105,13 +105,28 @@ always_comb begin : Result_mux
 end
 
 // make enum for imm_ext, extend sign depending on the size. 5{0}
-enum logic [1:0] {i_type, s_or_b_type, u_or_j_type} imm_sizes;
+logic [31:0] imm;
 always_comb begin : sign_extender
-  case(op_codes)
+  case(Instr[6:0])
+    OP_LTYPE: imm[31:12] = {20{imm[11]}};
+    OP_ITYPE: imm[31:12] = {20{imm[11]}};
+    OP_AUIPC: imm[11:0] = {20{1'b0}};
+    OP_STYPE: imm[31:12] = {20{imm[11]}};
+    OP_LUI  : imm[11:0] = {20{1'b0}};
+    OP_BTYPE: begin
+      imm[0] = 1'b0;
+      imm[31:13] = {19{imm[12]}};
+    end
+    OP_JALR : begin
+      imm[0] = 1'b0;
+      imm[31:21] = {11{imm[20]}};
+    end
+    OP_JAL  : begin
+      imm[0] = 1'b0;
+      imm[31:21] = {11{imm[20]}};
+    end
   endcase
 end
-
-
 
 // Register file
 logic RegWrite;
@@ -160,12 +175,13 @@ enum logic [3:0] {
 
 //decode variables
 logic [6:0] op;
-logic [2:0] func3; 
-logic [6:0] func7;
+logic [2:0] funct3; 
+logic [6:0] funct7;
 logic [2:0] ImmSrc;
 
 op_type_t op_codes;
-funct3_ritype_t rtype_funct3;
+funct3_ritype_t enum_funct3;
+// logic [0:2] funct3;
 
 always_ff @(posedge clk) begin : rv32i
   if (rst) begin
@@ -177,17 +193,15 @@ always_ff @(posedge clk) begin : rv32i
     case(rv32_state)
     FETCH : begin
       PCWrite = 1; //?? should this be seperated/branching 
-      // SrcA = MEM_SRC_PC;
-      // SrcB = WriteData;
-      // AluOp = 
       AdrSrc = MEM_SRC_PC;
       IRWrite = 1;
       mem_wr_ena = 0;
-      RegWrite = 0; 
+      RegWrite = 0;
       ALUSrcA = MEM_SRC_PC_2;
       ALUSrcB = Src_CONST_FOUR;
       ALUControl = ALU_AND;
       ResultSrc = src_ALUResult;
+      rv32_state = DECODE;
     end
     DECODE : begin
       PCWrite = 0;
@@ -195,18 +209,20 @@ always_ff @(posedge clk) begin : rv32i
       IRWrite = 0;
       RegWrite = 0;
       ImmSrc = 2'b00; // TODO: define ImmSrc
-      op = Instr[6:0];
-      case(op)
-        // OP_LTYPE; begin 
-
-        //   end
+      case(Instr[6:0])
+        OP_LTYPE: begin 
+          imm[11:0] = Instr[31:20];
+          rs1 = Instr[19:15];
+          funct3 = Instr[14:12]; //explicitly define when needed
+          rd = Instr[11:7];
+          end
         OP_ITYPE: begin 
           imm[11:0] = Instr[31:20];
           rs1 = Instr[19:15];
           funct3 = Instr[14:12];
           rd = Instr[11:7];
           end
-        // OP_AUIPC; begin 
+        // OP_AUIPC: begin 
 
         //   end
         OP_STYPE: begin 
@@ -249,7 +265,7 @@ always_ff @(posedge clk) begin : rv32i
           rd = Instr[11:7];
           end     
       endcase
-      case(op_codes)
+      case(Instr[6:0])
         OP_LTYPE: rv32_state = MEM_ADDR;
         OP_STYPE: rv32_state = MEM_ADDR;
         OP_RTYPE: rv32_state = EXECUTE_R;
@@ -265,8 +281,8 @@ always_ff @(posedge clk) begin : rv32i
       IRWrite = 0;
       RegWrite = 0;
       ImmSrc = 2'b00; 
-      ALUSrcA = 2'b10;
-      ALUSrcB = 2'b01;
+      ALUSrcA = REG_DATA_1;
+      ALUSrcB = Src_IMM_EXT;
       ALUControl = ALU_AND;
       case(op_codes)
         OP_LTYPE: rv32_state = MEM_READ;
@@ -275,15 +291,14 @@ always_ff @(posedge clk) begin : rv32i
       endcase
     end
     EXECUTE_R : begin
-      ALUSrcA = 2'b10; 
-      ALUSrcB = 2'b00;
-      AluOp = 2'b10;
+      ALUSrcA = REG_DATA_1; 
+      ALUSrcB = Src_RD2;
       PCWrite = 0;
       mem_wr_ena = 0;
       IRWrite = 0;
       RegWrite = 0;
       rv32_state = ALU_WRITEBACK;
-      case (rtype_funct3)
+      case (funct3)
         FUNCT3_ADD: begin 
           case(funct7)
             7'b0000000: ALUControl = ALU_ADD;
@@ -347,12 +362,12 @@ always_ff @(posedge clk) begin : rv32i
       ResultSrc = src_Data;
       
       end
-    ERROR : begin
-      end
-    ERROR : begin
-      end
-    ERROR : begin
-      end
+    ERROR1 : begin
+    end
+    ERROR2 : begin
+    end
+    ERROR3 : begin
+    end
     endcase
   end
 end
