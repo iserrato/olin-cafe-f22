@@ -48,7 +48,8 @@ initial begin
   $display("Ran %d cycles, finishing.", `MAX_CYCLES);
 
   UUT.MMU.dump_memory("mmu");
-
+  UUT.CORE.REGISTER_FILE.print_state();
+  
   $finish;
 end
 
@@ -69,6 +70,8 @@ always @(posedge sysclk) begin
           end
           if(all_equal) begin
             $display("!!! Infinite loop detected (over %3d iterations) - ending sim !!!", INFINITE_LOOP_LENGTH);
+            UUT.MMU.dump_memory("mmu");
+            UUT.CORE.REGISTER_FILE.print_state();
             $finish;
           end
           PC_buffer.delete(0);

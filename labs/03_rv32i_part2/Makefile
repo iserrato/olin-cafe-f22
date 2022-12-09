@@ -23,6 +23,9 @@ test_register_file: tests/test_register_file.sv ${RFILE_SRCS}
 
 # Modify the -DINITIAL_INST_MEM string to change the initial memory.
 # Modify the -DMAX_CYCLES string to change the number of cycles run.
+test_rv32i_fetch: tests/test_rv32i_system.sv asm/fetch.memh ${RV32I_SRCS}
+	${IVERILOG} -DINITIAL_INST_MEM=\"asm/fetch.memh\" tests/test_rv32i_system.sv ${RV32I_SRCS} -s test_rv32i_system -o test_rv32i_system.bin && ${VVP} test_rv32i_system.bin ${VVP_POST}
+
 test_rv32i_itypes: tests/test_rv32i_system.sv asm/itypes.memh ${RV32I_SRCS}
 	${IVERILOG} -DINITIAL_INST_MEM=\"asm/itypes.memh\" -DMAX_CYCLES="100" tests/test_rv32i_system.sv ${RV32I_SRCS} -s test_rv32i_system -o test_rv32i_system.bin && ${VVP} test_rv32i_system.bin ${VVP_POST}
 

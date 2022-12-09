@@ -32,6 +32,8 @@ output wire [31:0] PC;
 wire [31:0] PC_old;
 logic PCWrite;
 logic [31:0] PC_next; 
+logic PCUpdate;
+logic Branch;
 
 // Program Counter Registers
 register #(.N(32), .RESET(PC_START_ADDRESS)) PC_REGISTER (
@@ -152,6 +154,10 @@ alu_behavioural ALU (
   .overflow(overflow), .zero(zero), .equal(equal)
 );
 
+always_comb begin : PC_updater
+  PCWrite = (Branch & 1'b0) | PCUpdate;
+end
+
 // Implement your multicycle rv32i CPU here!
 
 enum logic [3:0] {
@@ -168,9 +174,7 @@ enum logic [3:0] {
   MEM_WRITE = 4'b1010,
   JUMP_WRITEBACK = 4'b1011,
   MEM_WRITEBACK = 4'b1100,
-  ERROR1 = 4'b1101,
-  ERROR2 = 4'b1110,
-  ERROR3 = 4'b1111 
+  ERROR = 4'b1111
 } rv32_state;
 
 //decode variables
@@ -181,102 +185,128 @@ logic [2:0] ImmSrc;
 
 op_type_t op_codes;
 funct3_ritype_t enum_funct3;
-// logic [0:2] funct3;
 
-always_ff @(posedge clk) begin : rv32i
+always_comb begin : DECORDER 
+  op = Instr[6:0];
+  case(op)
+    OP_LTYPE: begin 
+      imm[11:0] = Instr[31:20];
+      rs1 = Instr[19:15];
+      funct3 = Instr[14:12]; //explicitly define when needed
+      rd = Instr[11:7];
+      end
+    OP_ITYPE: begin 
+      imm[11:0] = Instr[31:20];
+      rs1 = Instr[19:15];
+      funct3 = Instr[14:12];
+      rd = Instr[11:7];
+      end
+    // OP_AUIPC: begin 
+
+    //   end
+    OP_STYPE: begin 
+      imm[11:5] = Instr[31:25]; //define imm TODO
+      rs1 = Instr[19:15];
+      rs2 = Instr[24:20];
+      funct3 = Instr[14:12];
+      imm[4:0] = Instr[11:7];
+      end
+    OP_RTYPE: begin 
+      funct7 = Instr[31:25]; 
+      rs1 = Instr[19:15];
+      rs2 = Instr[24:20];
+      funct3 = Instr[14:12];
+      rd = Instr[11:7];
+      end
+    OP_LUI  : begin 
+      end
+    OP_BTYPE: begin 
+      imm[12] = Instr[31];
+      imm[10:5] = Instr[30:25];
+      rs1 = Instr[19:15];
+      rs2 = Instr[24:20];
+      funct3 = Instr[14:12];
+      imm[4:1] = Instr[11:8];
+      imm[11] = Instr[7];
+      end
+    OP_JALR : begin //TODO: finish this!
+      imm[20] = Instr[31];
+      imm[10:1] = Instr[30:21];
+      imm[21] = Instr[20];
+      imm[19:12] = Instr[19:12];
+      rd = Instr[11:7];
+      end
+    OP_JAL  : begin 
+      imm[20] = Instr[31];
+      imm[10:1] = Instr[30:21];
+      imm[21] = Instr[20];
+      imm[19:12] = Instr[19:12];
+      rd = Instr[11:7];
+      end     
+  endcase
+end
+
+always_ff @(posedge clk) begin : main_fsm
   if (rst) begin
-    mem_wr_ena = 0;
-    rv32_state = FETCH;
+    rv32_state <= FETCH;
+    // A <= 0;
+    // mem_wr_data <= 0;
+  end else begin
+    case(rv32_state)
+        FETCH: rv32_state <= DECODE;
+        DECODE: begin
+          case(op)
+            OP_LTYPE: rv32_state <= MEM_ADDR;
+            OP_STYPE: rv32_state <= MEM_ADDR;
+            OP_RTYPE: rv32_state <= EXECUTE_R;
+            OP_ITYPE: rv32_state <= EXECUTE_I;
+            OP_JAL: rv32_state <= JAL;
+            OP_BTYPE: rv32_state <= BRANCH;
+            default: rv32_state <= ERROR;
+          endcase
+        end
+        EXECUTE_I: rv32_state <= ALU_WRITEBACK;
+        ALU_WRITEBACK: rv32_state <= FETCH;
+        MEM_ADDR : begin
+          case(op)
+            OP_LTYPE: rv32_state <= MEM_READ;
+            OP_STYPE: rv32_state <= MEM_WRITE;
+            default: rv32_state <= FETCH;
+          endcase
+        end
+        default: rv32_state <= ERROR;
+    endcase
   end
+end
 
+always_ff @(posedge clk) begin : control_unit_cl
   if (ena) begin
     case(rv32_state)
     FETCH : begin
-      PCWrite = 1; //?? should this be seperated/branching 
+      Branch = 0;
+      PCUpdate = 1'b1;
       AdrSrc = MEM_SRC_PC;
-      IRWrite = 1;
+      IRWrite = 1'b1;
       mem_wr_ena = 0;
-      RegWrite = 0;
+      RegWrite = 1'b0;
       ALUSrcA = MEM_SRC_PC_2;
       ALUSrcB = Src_CONST_FOUR;
-      ALUControl = ALU_AND;
+      ALUControl = ALU_ADD;
       ResultSrc = src_ALUResult;
-      rv32_state = DECODE;
+      PC_next = RESULT;
     end
     DECODE : begin
-      PCWrite = 0;
-      mem_wr_ena = 0;
-      IRWrite = 0;
-      RegWrite = 0;
-      ImmSrc = 2'b00; // TODO: define ImmSrc
-      case(Instr[6:0])
-        OP_LTYPE: begin 
-          imm[11:0] = Instr[31:20];
-          rs1 = Instr[19:15];
-          funct3 = Instr[14:12]; //explicitly define when needed
-          rd = Instr[11:7];
-          end
-        OP_ITYPE: begin 
-          imm[11:0] = Instr[31:20];
-          rs1 = Instr[19:15];
-          funct3 = Instr[14:12];
-          rd = Instr[11:7];
-          end
-        // OP_AUIPC: begin 
-
-        //   end
-        OP_STYPE: begin 
-          imm[11:5] = Instr[31:25]; //define imm TODO
-          rs1 = Instr[19:15];
-          rs2 = Instr[24:20];
-          funct3 = Instr[14:12];
-          imm[4:0] = Instr[11:7];
-          end
-        OP_RTYPE: begin 
-          funct7 = Instr[31:25]; 
-          rs1 = Instr[19:15];
-          rs2 = Instr[24:20];
-          funct3 = Instr[14:12];
-          rd = Instr[11:7];
-          end
-        OP_LUI  : begin 
-          end
-        OP_BTYPE: begin 
-          imm[12] = Instr[31];
-          imm[10:5] = Instr[30:25];
-          rs1 = Instr[19:15];
-          rs2 = Instr[24:20];
-          funct3 = Instr[14:12];
-          imm[4:1] = Instr[11:8];
-          imm[11] = Instr[7];
-          end
-        OP_JALR : begin //TODO: finish this!
-          imm[20] = Instr[31];
-          imm[10:1] = Instr[30:21];
-          imm[21] = Instr[20];
-          imm[19:12] = Instr[19:12];
-          rd = Instr[11:7];
-          end
-        OP_JAL  : begin 
-          imm[20] = Instr[31];
-          imm[10:1] = Instr[30:21];
-          imm[21] = Instr[20];
-          imm[19:12] = Instr[19:12];
-          rd = Instr[11:7];
-          end     
-      endcase
-      case(Instr[6:0])
-        OP_LTYPE: rv32_state = MEM_ADDR;
-        OP_STYPE: rv32_state = MEM_ADDR;
-        OP_RTYPE: rv32_state = EXECUTE_R;
-        OP_ITYPE: rv32_state = EXECUTE_I;
-        OP_JAL: rv32_state = JAL;
-        OP_BTYPE: rv32_state = BRANCH;
-        default: rv32_state = FETCH;
-      endcase
+      PCUpdate = 1'b0;
+      PCWrite = 1'b0;
+      mem_wr_ena = 1'b0;
+      IRWrite = 1'b0;
+      RegWrite = 1'b0;
+      Branch = 0;
+      ImmSrc = 2'b00; 
       end
     MEM_ADDR : begin
-      PCWrite = 0;
+      Branch = 0;
+      PCUpdate = 0;
       mem_wr_ena = 0;
       IRWrite = 0;
       RegWrite = 0;
@@ -284,20 +314,16 @@ always_ff @(posedge clk) begin : rv32i
       ALUSrcA = REG_DATA_1;
       ALUSrcB = Src_IMM_EXT;
       ALUControl = ALU_AND;
-      case(op_codes)
-        OP_LTYPE: rv32_state = MEM_READ;
-        OP_STYPE: rv32_state = MEM_WRITE;
-        default: rv32_state = FETCH;
-      endcase
     end
     EXECUTE_R : begin
+      Branch = 0;
       ALUSrcA = REG_DATA_1; 
       ALUSrcB = Src_RD2;
-      PCWrite = 0;
+      PCUpdate = 0;
       mem_wr_ena = 0;
       IRWrite = 0;
       RegWrite = 0;
-      rv32_state = ALU_WRITEBACK;
+      // rv32_state = ALU_WRITEBACK;
       case (funct3)
         FUNCT3_ADD: begin 
           case(funct7)
@@ -322,26 +348,37 @@ always_ff @(posedge clk) begin : rv32i
         default: ALUControl = ALU_INVALID;
       endcase
       end
-
     EXECUTE_I : begin
+      PCUpdate = 1'b0;
+      PCWrite = 1'b0;
+      mem_wr_ena = 1'b0;
+      IRWrite = 1'b0;
+      RegWrite = 1'b0;
+      Branch = 0;
+      ImmSrc = 2'b00; 
+      ALUSrcA = REG_DATA_1;
+      ALUSrcB = Src_IMM_EXT;
+      ALUControl = ALU_ADD; // need to make this based on funct3
       end
     JAL : begin
       end
     JALR : begin
       end
     BRANCH : begin
+      Branch = 1;
       end
     ALU_WRITEBACK : begin
-      PCWrite = 0;
+      Branch = 0;
+      PCUpdate = 0;
       mem_wr_ena = 0;
       IRWrite = 0;
       RegWrite = 1;
       ResultSrc = src_ALUOut;
-      rv32_state = FETCH;
       end
     MEM_READ : begin
+      Branch = 0;
       ResultSrc = src_ALUOut; 
-      PCWrite = 1'b0;
+      PCUpdate = 1'b0;
       AdrSrc = MEM_SRC_RESULT;
       mem_wr_ena = 1'b0;
       IRWrite = 1'b0;
@@ -354,7 +391,8 @@ always_ff @(posedge clk) begin : rv32i
     JUMP_WRITEBACK : begin
       end
     MEM_WRITEBACK : begin
-      PCWrite = 0;
+      Branch = 0;
+      PCUpdate = 0;
       mem_wr_ena = 0;
       IRWrite = 0;
       RegWrite = 1;
@@ -362,12 +400,21 @@ always_ff @(posedge clk) begin : rv32i
       ResultSrc = src_Data;
       
       end
-    ERROR1 : begin
+    ERROR : begin
     end
-    ERROR2 : begin
+    default: begin
+      PC_next = 0;
+      PCWrite = 1'b0;
+      ALUSrcA = MEM_SRC_PC_2;
+      ALUSrcB = Src_RD2;
+      ALUControl = ALU_ADD;
+      IRWrite = 1'b0;
+      mem_wr_ena = 1'b0;
+      rs1 = 0;
+      rs2 = 0;
+      rd = 0;
     end
-    ERROR3 : begin
-    end
+
     endcase
   end
 end
