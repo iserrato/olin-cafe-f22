@@ -67,11 +67,12 @@ register #(.N(32)) RD_DATA_REGISTER(
 );
 
 // Select memory address based on address select siganl
-enum logic {MEM_SRC_PC, MEM_SRC_RESULT} AdrSrc;
+enum logic [1:0] {MEM_SRC_PC, MEM_SRC_RESULT, ADR_DEFAULT} AdrSrc;
 always_comb begin : memory_read_address_mux
   case(AdrSrc)
     MEM_SRC_PC : mem_addr = PC;
     MEM_SRC_RESULT : mem_addr = alu_result;
+    ADR_DEFAULT : mem_addr = 0;
     default: mem_addr = 0;
   endcase
 end
@@ -138,7 +139,7 @@ logic [4:0] rd, rs1, rs2;
 logic [31:0] RESULT;
 wire [31:0] RD1, RD2;
 register_file REGISTER_FILE(
-  .clk(clk), 
+  .clk(clk), .rst(rst),
   .wr_ena(RegWrite), .wr_addr(rd), .wr_data(RESULT),
   .rd_addr0(rs1), .rd_addr1(rs2),
   .rd_data0(RD1), .rd_data1(RD2)
@@ -213,7 +214,7 @@ always_comb begin : DECODER
       imm[4:0] = Instr[11:7];
       end
     OP_RTYPE: begin 
-      funct7 = Instr[31:25]; 
+      funct7 = Instr[31:25];
       rs1 = Instr[19:15];
       rs2 = Instr[24:20];
       funct3 = Instr[14:12];
@@ -274,6 +275,9 @@ always_ff @(posedge clk) begin : main_fsm
             default: rv32_state <= FETCH;
           endcase
         end
+        MEM_WRITE : rv32_state <= FETCH;
+        MEM_READ : rv32_state <= MEM_WRITEBACK;
+        MEM_WRITEBACK : rv32_state <= FETCH;
         default: rv32_state <= ERROR;
     endcase
   end
@@ -302,7 +306,7 @@ always_comb begin: ALU_Control_Unit
     MEM_ADDR: begin
       ALUSrcA = REG_DATA_1;
       ALUSrcB = SRC_IMM_EXT;
-      ALUControl = ALU_AND;
+      ALUControl = ALU_ADD;
     end
     EXECUTE_R: begin
       ALUSrcA = REG_DATA_1; 
@@ -371,6 +375,10 @@ always_comb begin: Memory_Control_Unit
       AdrSrc = MEM_SRC_RESULT;
       mem_wr_ena = 1'b0;
     end
+    MEM_WRITE: begin
+      AdrSrc = MEM_SRC_RESULT;
+      mem_wr_ena = 1'b1;
+    end
     default: begin
       AdrSrc = MEM_SRC_PC;
       mem_wr_ena = 1'b0;
@@ -379,7 +387,6 @@ always_comb begin: Memory_Control_Unit
 end
 
 always_comb begin: RegFile_Control_Unit
-  RegWrite = (rv32_state == MEM_WRITEBACK);
   case (rv32_state)
     MEM_WRITEBACK: begin
       RegWrite = 1'b1;
@@ -393,12 +400,15 @@ always_comb begin: RegFile_Control_Unit
       RegWrite = 1'b0;
       ResultSrc = SRC_ALU_OUT; 
     end
+    MEM_WRITE : begin
+      RegWrite = 1'b0;
+      ResultSrc = SRC_ALU_OUT;
+    end
     default: begin
       RegWrite = 1'b0;
       ResultSrc = R_DEFAULT;
     end
   endcase
-  ResultSrc = SRC_ALU_OUT;
 end
 
 always_comb begin: Branch_Control_Unit
@@ -418,40 +428,13 @@ always_comb begin : control_unit_cl
     FETCH : begin
       AdrSrc = MEM_SRC_PC;
     end
-    DECODE : begin
-      end
-    MEM_ADDR : begin
-    end
-    EXECUTE_R : begin
-      end
-    EXECUTE_I : begin
-      end
-    JAL : begin
-      end
-    JALR : begin
-      end
-    BRANCH : begin
-      end
-    ALU_WRITEBACK : begin
-      end
     MEM_READ : begin
       AdrSrc = MEM_SRC_RESULT;
       // mem_wr_ena = 1'b0;
       end
-    MEM_WRITE : begin
-      end
-    JUMP_WRITEBACK : begin
-      end
-    MEM_WRITEBACK : begin
-
-      end
-    ERROR : begin
-    end
-    default: begin
-    end
+    default: AdrSrc = ADR_DEFAULT;
     endcase
   end
 end
-
 
 endmodule
