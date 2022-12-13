@@ -71,7 +71,7 @@ enum logic [1:0] {MEM_SRC_PC, MEM_SRC_RESULT, ADR_DEFAULT} AdrSrc;
 always_comb begin : memory_read_address_mux
   case(AdrSrc)
     MEM_SRC_PC : mem_addr = PC;
-    MEM_SRC_RESULT : mem_addr = alu_result;
+    MEM_SRC_RESULT : mem_addr = RESULT;
     ADR_DEFAULT : mem_addr = 0;
     default: mem_addr = 0;
   endcase
@@ -372,16 +372,16 @@ end
 always_comb begin: Memory_Control_Unit
   case (rv32_state)
     MEM_READ: begin
-      AdrSrc = MEM_SRC_RESULT;
       mem_wr_ena = 1'b0;
+      AdrSrc = MEM_SRC_RESULT;
     end
     MEM_WRITE: begin
-      AdrSrc = MEM_SRC_RESULT;
       mem_wr_ena = 1'b1;
+      AdrSrc = MEM_SRC_RESULT;
     end
     default: begin
-      AdrSrc = MEM_SRC_PC;
       mem_wr_ena = 1'b0;
+      AdrSrc = MEM_SRC_PC;
     end
   endcase
 end
