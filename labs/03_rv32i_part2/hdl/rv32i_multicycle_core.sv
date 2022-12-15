@@ -30,14 +30,13 @@ logic [31:0] Data;
 // Program Counter
 output wire [31:0] PC;
 wire [31:0] PC_old;
-logic PCWrite;
 logic [31:0] PC_next; 
-logic PCUpdate;
+logic PC_ena;
 logic Branch;
 
 // Program Counter Registers
 register #(.N(32), .RESET(PC_START_ADDRESS)) PC_REGISTER (
-  .clk(clk), .rst(rst), .ena(PCWrite), .d(PC_next), .q(PC)
+  .clk(clk), .rst(rst), .ena(PC_ena), .d(PC_next), .q(PC)
 );
 register #(.N(32)) PC_OLD_REGISTER(
   .clk(clk), .rst(rst), .ena(IRWrite), .d(PC), .q(PC_old)
@@ -149,16 +148,12 @@ register_file REGISTER_FILE(
 logic [31:0] SrcA, SrcB;
 alu_control_t ALUControl;
 wire [31:0] alu_result;
-wire overflow, zero, equal;
+wire overflow, alu_zero, alu_equal;
 alu_behavioural ALU (
   .a(SrcA), .b(SrcB), .result(alu_result),
   .control(ALUControl),
-  .overflow(overflow), .zero(zero), .equal(equal)
+  .overflow(overflow), .zero(alu_zero), .equal(alu_equal)
 );
-
-always_comb begin : PC_updater
-  PCWrite = (Branch & 1'b0) | PCUpdate;
-end
 
 // Implement your multicycle rv32i CPU here!
 
@@ -278,20 +273,35 @@ always_ff @(posedge clk) begin : main_fsm
         MEM_WRITE : rv32_state <= FETCH;
         MEM_READ : rv32_state <= MEM_WRITEBACK;
         MEM_WRITEBACK : rv32_state <= FETCH;
+        BRANCH : rv32_state <= FETCH;
         default: rv32_state <= ERROR;
     endcase
   end
 end
 
+logic branch_taken;
+always_comb begin: BRANCHING
+  if (rv32_state == BRANCH) begin
+      case(funct3)
+        FUNCT3_BEQ: branch_taken = alu_equal;
+        FUNCT3_BNE: branch_taken = ~alu_equal;
+        FUNCT3_BLT, FUNCT3_BLTU: branch_taken = alu_result[0];
+        FUNCT3_BGE, FUNCT3_BGEU: branch_taken = ~alu_result[0];
+        default: branch_taken = 0;
+      endcase
+  end
+end
+
 always_comb begin: PC_Control_Unit
+  PC_next = RESULT;
   case (rv32_state)
     FETCH: begin
-      PC_next = alu_result;
-      PCUpdate = 1'b1;
+      PC_ena = 1'b1;
     end
+    JAL: PC_ena = 1'b1;
+    BRANCH:  PC_ena = branch_taken; // TODO: Branch Cases
     default: begin
-      PC_next = 0;
-      PCUpdate = 0;
+      PC_ena = 0;
     end
   endcase
 end
@@ -301,6 +311,11 @@ always_comb begin: ALU_Control_Unit
     FETCH: begin
       ALUSrcA = SRC_PC;
       ALUSrcB = SRC_FOUR;
+      ALUControl = ALU_ADD;
+    end
+    DECODE: begin
+      ALUSrcA = MEM_SRC_OLD_PC;
+      ALUSrcB = SRC_IMM_EXT;
       ALUControl = ALU_ADD;
     end
     MEM_ADDR: begin
@@ -353,12 +368,24 @@ always_comb begin: ALU_Control_Unit
         end
         FUNCT3_OR: ALUControl = ALU_OR;
         FUNCT3_AND: ALUControl = ALU_AND;
+        default: ALUControl = ALU_INVALID;
       endcase
-      ALUControl = ALU_ADD; // TODO need to make this based on funct3
     end
     ALU_WRITEBACK: begin
       ALUSrcA = REG_DATA_1;
       ALUSrcB = SRC_IMM_EXT;
+      ALUControl = ALU_ADD;
+    end
+    BRANCH: begin
+      ALUSrcA = REG_DATA_1;
+      ALUSrcB = SRC_RD2;
+      if(funct3[1]) ALUControl = ALU_SLTU;
+      else ALUControl = ALU_SLT;
+      // ALUControl = ALU_SUB;
+    end
+    JAL : begin
+      ALUSrcA = MEM_SRC_OLD_PC;
+      ALUSrcB = SRC_FOUR;
       ALUControl = ALU_ADD;
     end
     default: begin
@@ -386,34 +413,21 @@ always_comb begin: Memory_Control_Unit
   endcase
 end
 
-always_comb begin: RegFile_Control_Unit
+always_comb begin : RegWrite_Control_Unit
+  RegWrite = (rv32_state == MEM_WRITEBACK | rv32_state == ALU_WRITEBACK);
+end
+
+always_comb begin: Result_Control_Unit
   case (rv32_state)
-    MEM_WRITEBACK: begin
-      RegWrite = 1'b1;
-      ResultSrc = SRC_MEM_DATA;
-    end
-    ALU_WRITEBACK: begin
-      RegWrite = 1'b1;
-      ResultSrc = SRC_ALU_OUT;
-    end
-    MEM_READ: begin
-      RegWrite = 1'b0;
-      ResultSrc = SRC_ALU_OUT; 
-    end
-    MEM_WRITE : begin
-      RegWrite = 1'b0;
-      ResultSrc = SRC_ALU_OUT;
-    end
-    default: begin
-      RegWrite = 1'b0;
-      ResultSrc = R_DEFAULT;
-    end
+    FETCH: ResultSrc = SRC_ALU_RESULT;
+    MEM_WRITEBACK: ResultSrc = SRC_MEM_DATA;
+    default: ResultSrc = SRC_ALU_OUT;
   endcase
 end
 
-always_comb begin: Branch_Control_Unit
-  Branch = (rv32_state == BRANCH);
-end
+// always_comb begin: Branch_Control_Unit
+//   Branch = (rv32_state == BRANCH);
+// end
 
 always_comb begin: Instruction_Control_Unit
   case (rv32_state)
@@ -423,18 +437,15 @@ always_comb begin: Instruction_Control_Unit
 end
 
 always_comb begin : control_unit_cl
-  if (ena) begin
-    case(rv32_state)
-    FETCH : begin
-      AdrSrc = MEM_SRC_PC;
-    end
-    MEM_READ : begin
-      AdrSrc = MEM_SRC_RESULT;
-      // mem_wr_ena = 1'b0;
-      end
-    default: AdrSrc = ADR_DEFAULT;
-    endcase
+  case(rv32_state)
+  FETCH : begin
+    AdrSrc = MEM_SRC_PC;
   end
+  MEM_READ : begin
+    AdrSrc = MEM_SRC_RESULT;
+    end
+  default: AdrSrc = ADR_DEFAULT;
+  endcase
 end
 
 endmodule
