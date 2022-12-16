@@ -226,17 +226,17 @@ always_comb begin : DECODER
       imm[4:1] = Instr[11:8];
       imm[11] = Instr[7];
       end
-    OP_JALR : begin //TODO: finish this!
-      imm[20] = Instr[31];
-      imm[10:1] = Instr[30:21];
-      imm[21] = Instr[20];
-      imm[19:12] = Instr[19:12];
+    OP_JALR : begin
+      imm[11:0] = Instr[31:20];
+      rs1 = Instr[19:15];
+      funct3 = Instr[14:12];
+      funct7 = Instr[31:25];
       rd = Instr[11:7];
       end
     OP_JAL  : begin 
       imm[20] = Instr[31];
       imm[10:1] = Instr[30:21];
-      imm[21] = Instr[20];
+      imm[11] = Instr[20];
       imm[19:12] = Instr[19:12];
       rd = Instr[11:7];
       end     
@@ -256,6 +256,7 @@ always_ff @(posedge clk) begin : main_fsm
             OP_RTYPE: rv32_state <= EXECUTE_R;
             OP_ITYPE: rv32_state <= EXECUTE_I;
             OP_JAL: rv32_state <= JAL;
+            OP_JALR: rv32_state <= JALR;
             OP_BTYPE: rv32_state <= BRANCH;
             default: rv32_state <= ERROR;
           endcase
@@ -274,6 +275,9 @@ always_ff @(posedge clk) begin : main_fsm
         MEM_READ : rv32_state <= MEM_WRITEBACK;
         MEM_WRITEBACK : rv32_state <= FETCH;
         BRANCH : rv32_state <= FETCH;
+        JAL : rv32_state <= JUMP_WRITEBACK;
+        JALR: rv32_state <= JUMP_WRITEBACK;
+        JUMP_WRITEBACK: rv32_state <= FETCH;
         default: rv32_state <= ERROR;
     endcase
   end
@@ -299,9 +303,10 @@ always_comb begin: PC_Control_Unit
       PC_ena = 1'b1;
     end
     JAL: PC_ena = 1'b1;
-    BRANCH:  PC_ena = branch_taken; // TODO: Branch Cases
+    JALR: PC_ena = 1'b1;
+    BRANCH:  PC_ena = branch_taken;
     default: begin
-      PC_ena = 0;
+      PC_ena = 1'b0;
     end
   endcase
 end
@@ -381,9 +386,18 @@ always_comb begin: ALU_Control_Unit
       ALUSrcB = SRC_RD2;
       if(funct3[1]) ALUControl = ALU_SLTU;
       else ALUControl = ALU_SLT;
-      // ALUControl = ALU_SUB;
     end
     JAL : begin
+      ALUSrcA = MEM_SRC_OLD_PC;
+      ALUSrcB = SRC_FOUR;
+      ALUControl = ALU_ADD;
+    end
+    JALR : begin
+      ALUSrcA = REG_DATA_1;
+      ALUSrcB = SRC_IMM_EXT;
+      ALUControl = ALU_ADD;
+    end
+    JUMP_WRITEBACK : begin
       ALUSrcA = MEM_SRC_OLD_PC;
       ALUSrcB = SRC_FOUR;
       ALUControl = ALU_ADD;
@@ -414,7 +428,10 @@ always_comb begin: Memory_Control_Unit
 end
 
 always_comb begin : RegWrite_Control_Unit
-  RegWrite = (rv32_state == MEM_WRITEBACK | rv32_state == ALU_WRITEBACK);
+  case(rv32_state)
+    MEM_WRITEBACK, ALU_WRITEBACK, JUMP_WRITEBACK : RegWrite = 1;
+    default : RegWrite = 0;
+  endcase
 end
 
 always_comb begin: Result_Control_Unit
@@ -424,10 +441,6 @@ always_comb begin: Result_Control_Unit
     default: ResultSrc = SRC_ALU_OUT;
   endcase
 end
-
-// always_comb begin: Branch_Control_Unit
-//   Branch = (rv32_state == BRANCH);
-// end
 
 always_comb begin: Instruction_Control_Unit
   case (rv32_state)

@@ -1,21 +1,21 @@
 [*]
 [*] GTKWave Analyzer v3.3.104 (w)1999-2020 BSI
-[*] Thu Dec 15 22:49:26 2022
+[*] Fri Dec 16 18:11:24 2022
 [*]
 [dumpfile] "/home/isabel/Documents/CompArch22/olin-cafe-f22/labs/03_rv32i_part2/rv32i_system.fst"
-[dumpfile_mtime] "Thu Dec 15 22:47:24 2022"
-[dumpfile_size] 9720
+[dumpfile_mtime] "Fri Dec 16 18:05:43 2022"
+[dumpfile_size] 8318
 [savefile] "/home/isabel/Documents/CompArch22/olin-cafe-f22/labs/03_rv32i_part2/tests/rv32i_system.gtkw"
-[timestart] 251400
+[timestart] 127600
 [size] 1308 704
 [pos] -1 -1
-*-14.956903 299900 775000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+*-14.956903 159200 775000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] test_rv32i_system.
 [treeopen] test_rv32i_system.UUT.
 [treeopen] test_rv32i_system.UUT.CORE.
 [treeopen] test_rv32i_system.UUT.MMU.
 [sst_width] 358
-[signals_width] 254
+[signals_width] 437
 [sst_expanded] 1
 [sst_vpaned_height] 261
 @28
@@ -34,7 +34,11 @@ test_rv32i_system.UUT.CORE.PC[31:0]
 test_rv32i_system.UUT.CORE.PC_next[31:0]
 @22
 test_rv32i_system.UUT.CORE.PC_old[31:0]
+@29
 test_rv32i_system.UUT.CORE.Instr[31:0]
+@28
+test_rv32i_system.UUT.CORE.imm[31:0]
+@22
 test_rv32i_system.UUT.CORE.op[6:0]
 @200
 -Decode
@@ -52,12 +56,13 @@ test_rv32i_system.UUT.CORE.funct7[6:0]
 test_rv32i_system.UUT.CORE.ALUSrcA[1:0]
 @24
 test_rv32i_system.UUT.CORE.SrcA[31:0]
+@28
+test_rv32i_system.UUT.CORE.ALUSrcB[1:0]
 test_rv32i_system.UUT.CORE.SrcB[31:0]
 @800028
 test_rv32i_system.UUT.CORE.alu_result[31:0]
-@29
-(0)test_rv32i_system.UUT.CORE.alu_result[31:0]
 @28
+(0)test_rv32i_system.UUT.CORE.alu_result[31:0]
 (1)test_rv32i_system.UUT.CORE.alu_result[31:0]
 (2)test_rv32i_system.UUT.CORE.alu_result[31:0]
 (3)test_rv32i_system.UUT.CORE.alu_result[31:0]

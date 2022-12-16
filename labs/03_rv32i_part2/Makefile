@@ -26,6 +26,9 @@ test_register_file: tests/test_register_file.sv ${RFILE_SRCS}
 test_rv32i_itypes: tests/test_rv32i_system.sv asm/itypes.memh ${RV32I_SRCS}
 	${IVERILOG} -DINITIAL_INST_MEM=\"asm/itypes.memh\" -DMAX_CYCLES="100" tests/test_rv32i_system.sv ${RV32I_SRCS} -s test_rv32i_system -o test_rv32i_system.bin && ${VVP} test_rv32i_system.bin ${VVP_POST}
 
+test_rv32i_foo: tests/test_rv32i_system.sv asm/foo.memh ${RV32I_SRCS}
+	${IVERILOG} -DINITIAL_INST_MEM=\"asm/foo.memh\" -DMAX_CYCLES="100" tests/test_rv32i_system.sv ${RV32I_SRCS} -s test_rv32i_system -o test_rv32i_system.bin && ${VVP} test_rv32i_system.bin ${VVP_POST}
+
 test_rv32i_ir_types: tests/test_rv32i_system.sv asm/irtypes.memh ${RV32I_SRCS}
 	${IVERILOG} -DINITIAL_INST_MEM=\"asm/irtypes.memh\" -DMAX_CYCLES="200" tests/test_rv32i_system.sv ${RV32I_SRCS} -s test_rv32i_system -o test_rv32i_system.bin && ${VVP} test_rv32i_system.bin ${VVP_POST}
 
