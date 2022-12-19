@@ -1,9 +1,9 @@
-addi x2, x0, 2
-jal ra, JUMP_HERE
-addi x2, x0, 10 # won't run
-JUMP_HERE: addi x3, x0, 3
-jalr x0, ra, 0
-addi x4, x0, 4
-addi x5, x0, 5
-addi x6, x0, 6
-addi x7, x0, 7
+ori  t0, x0, 8 # led0
+slli t0, t0, 4 
+ori  t0, t0, 4 # led1
+slli t0, t0, 4
+ori  t0, t0, 127 # half red
+slli t0, t0, 8
+ori  t0, t0, 0 # no green
+slli t0, t0, 8
+ori  t0, t0, 255 # full blue
